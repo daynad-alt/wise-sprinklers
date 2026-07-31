@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wise Admin — Management Dashboard</title>
+<style>
+:root{
+  --forest:#0a1c12; --panel:#0e2618; --panel-2:#123322; --green:#37d45f; --green-dim:#20a349;
+  --cream:#f3efe4; --dim:rgba(243,239,228,.6); --faint:rgba(243,239,228,.38); --line:rgba(243,239,228,.12);
+  --amber:#f0b447; --red:#ef6a5a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--forest);color:var(--cream);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5}
+a{color:var(--green);text-decoration:none}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#080a09;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header .brand{display:flex;align-items:center;gap:12px}
+header img{height:44px}
+header .brand b{font-weight:700}
+header .badge{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);border:1px solid var(--line);padding:5px 10px;border-radius:20px}
+header .right{display:flex;gap:16px;align-items:center;font-size:13px}
+.wrap{max-width:1200px;margin:0 auto;padding:24px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi .label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.kpi .val{font-size:1.7rem;font-weight:700;margin-top:6px}
+.kpi .val.green{color:var(--green)} .kpi .val.amber{color:var(--amber)}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:11px 18px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;font-weight:600}
+.tab:hover{color:var(--cream)}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* table */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-size:1.05rem;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:11px 14px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:11px 14px;border-bottom:1px solid rgba(243,239,228,.06);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:capitalize}
+.pill.active,.pill.paid{background:rgba(55,212,95,.16);color:var(--green)}
+.pill.inactive,.pill.void{background:rgba(243,239,228,.1);color:var(--dim)}
+.pill.draft{background:rgba(243,239,228,.12);color:var(--cream)}
+.pill.sent{background:rgba(240,180,71,.16);color:var(--amber)}
+.pill.overdue{background:rgba(239,106,90,.18);color:var(--red)}
+.low{color:var(--red);font-weight:700}
+.mono{font-variant-numeric:tabular-nums}
+.muted{color:var(--dim)}
+
+/* buttons + inputs */
+button,select,input{font-family:inherit;font-size:13px}
+.btn{background:var(--green);color:var(--forest);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
+.btn:hover{background:#4ee06e}
+.btn.ghost{background:transparent;color:var(--cream);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--green);color:var(--green)}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:6px}
+.btn.danger{background:transparent;border:1px solid rgba(239,106,90,.4);color:var(--red)}
+.btn.danger:hover{background:rgba(239,106,90,.14)}
+.iconbtn{background:var(--panel-2);border:1px solid var(--line);color:var(--cream);width:26px;height:26px;border-radius:6px;cursor:pointer;font-weight:700}
+.iconbtn:hover{border-color:var(--green);color:var(--green)}
+select.status{background:var(--panel-2);color:var(--cream);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+input,select.f{width:100%;background:var(--panel-2);color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:9px 11px;margin-top:4px}
+label{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+
+/* add form drawer */
+.addform{padding:16px 18px;border-bottom:1px solid var(--line);display:none;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end;background:var(--panel-2)}
+.addform.open{display:grid}
+.addform .actions{grid-column:1/-1;display:flex;gap:10px}
+@media(max-width:800px){.addform{grid-template-columns:1fr 1fr}}
+
+.detail{background:var(--panel-2);font-size:13px}
+.detail td{padding:0}
+.detail .inner{padding:14px 18px}
+.detail table{margin-top:6px}
+.detail th{background:transparent}
+.totals{display:flex;gap:26px;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.totals div{text-align:right}
+.totals .t-val{font-size:1.1rem;font-weight:700}
+.totals .grand{color:var(--green)}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(140%);background:var(--green);color:var(--forest);padding:12px 22px;border-radius:30px;font-weight:700;transition:transform .35s cubic-bezier(.16,1,.3,1);z-index:20}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red);color:#fff}
+.empty{padding:40px;text-align:center;color:var(--faint)}
+.loading{padding:40px;text-align:center;color:var(--faint)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img src="/api/media/logo.png" alt="Wise Sprinklers & Lighting" />
+    <span class="badge">Admin</span>
+  </div>
+  <div class="right">
+    <span class="muted" id="apibase"></span>
+    <a href="/">↩ Site</a>
+    <button class="btn ghost sm" onclick="loadAll()">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="clients">Clients</div>
+    <div class="tab" data-tab="appointments">Appointments</div>
+    <div class="tab" data-tab="invoices">Invoices</div>
+    <div class="tab" data-tab="content">Content</div>
+    <div class="tab" data-tab="services">Services</div>
+    <div class="tab" data-tab="reviews">Reviews</div>
+    <div class="tab" data-tab="inventory">Inventory</div>
+    <div class="tab" data-tab="vendors">Vendors</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2 id="panelTitle">Clients</h2>
+      <button class="btn sm" id="addBtn" onclick="toggleAdd()">+ Add</button>
+    </div>
+    <div class="addform" id="addForm"></div>
+    <div id="tableHost"><div class="loading">Loading…</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+document.getElementById('apibase').textContent = location.origin + API;
+const $ = (id) => document.getElementById(id);
+const money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let state = { tab: 'clients', clients: [], vendors: [], inventory: [], invoices: [], appointments: [], reviews: [], content: [], services: [], expanded: null };
+
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  setTimeout(() => (t.className = ''), 2600);
+}
+async function api(path, opts) {
+  const r = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+}
+
+/* ---------- load ---------- */
+async function loadAll() {
+  try {
+    const [summary, clients, vendors, inventory, invoices, appointments, reviews, content, services] = await Promise.all([
+      api('/summary'), api('/clients'), api('/vendors'), api('/inventory'), api('/invoices'), api('/appointments'), api('/reviews'), api('/content'), api('/services'),
+    ]);
+    state = { ...state, clients, vendors, inventory, invoices, appointments, reviews, content, services };
+    renderKpis(summary);
+    render();
+  } catch (e) {
+    $('tableHost').innerHTML = `<div class="empty">Could not reach the API at <b>${API}</b>.<br><br>Run <code>netlify dev</code> or deploy the function, then open this page from that server.<br><br><span class="muted">${esc(e.message)}</span></div>`;
+  }
+}
+function renderKpis(s) {
+  const cards = [
+    { label: 'New Appointments', val: s.new_appointments ?? 0, cls: 'green' },
+    { label: 'Invoices', val: s.counts.invoices },
+    { label: 'Outstanding', val: money(s.outstanding_receivables), cls: 'amber' },
+    { label: 'Collected', val: money(s.collected || 0), cls: 'green' },
+    { label: 'Pending Reviews', val: s.pending_reviews ?? 0 },
+    { label: 'Clients', val: s.counts.clients },
+  ];
+  $('kpis').innerHTML = cards.map((c) => `<div class="kpi"><div class="label">${c.label}</div><div class="val ${c.cls || ''}">${c.val}</div></div>`).join('');
+}
+
+/* ---------- tab switching ---------- */
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+  t.classList.add('active');
+  state.tab = t.dataset.tab; state.expanded = null;
+  $('panelTitle').textContent = t.textContent;
+  $('addForm').className = 'addform'; render();
+}));
+
+/* ---------- render current tab ---------- */
+function render() { ({ clients: renderClients, vendors: renderVendors, inventory: renderInventory, invoices: renderInvoices, appointments: renderAppointments, reviews: renderReviews, content: renderContent, services: renderServices }[state.tab])(); buildAddForm(); }
+
+function table(cols, rows) {
+  if (!rows.length) return '<div class="empty">No records yet.</div>';
+  return `<table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function renderClients() {
+  const rows = state.clients.map((c) => `<tr>
+    <td><b>${esc(c.name)}</b></td><td class="muted">${esc(c.company || '—')}</td>
+    <td>${esc(c.email || '—')}</td><td class="mono">${esc(c.phone || '—')}</td>
+    <td class="muted">${esc(c.city || '—')}</td><td><span class="pill ${c.status}">${c.status}</span></td>
+    <td><button class="btn danger sm" onclick="del('clients',${c.id},'${esc(c.name)}')">Delete</button></td></tr>`);
+  $('tableHost').innerHTML = table(['Name', 'Company', 'Email', 'Phone', 'City', 'Status', ''], rows);
+}
+function renderVendors() {
+  const rows = state.vendors.map((v) => `<tr>
+    <td><b>${esc(v.name)}</b></td><td>${esc(v.category || '—')}</td><td class="muted">${esc(v.contact_name || '—')}</td>
+    <td>${esc(v.email || '—')}</td><td class="mono">${esc(v.phone || '—')}</td><td><span class="pill ${v.status}">${v.status}</span></td>
+    <td><button class="btn danger sm" onclick="del('vendors',${v.id},'${esc(v.name)}')">Delete</button></td></tr>`);
+  $('tableHost').innerHTML = table(['Vendor', 'Category', 'Contact', 'Email', 'Phone', 'Status', ''], rows);
+}
+function renderInventory() {
+  const rows = state.inventory.map((i) => {
+    const low = i.quantity <= i.reorder_level;
+    return `<tr>
+      <td class="mono">${esc(i.sku)}</td><td><b>${esc(i.name)}</b></td><td class="muted">${esc(i.category || '—')}</td>
+      <td class="muted">${esc(i.vendor_name || '—')}</td>
+      <td class="mono ${low ? 'low' : ''}">${i.quantity}${low ? ' ⚠' : ''}</td>
+      <td class="mono muted">${i.reorder_level}</td><td class="mono">${money(i.unit_price)}</td>
+      <td style="white-space:nowrap">
+        <button class="iconbtn" onclick="adjust(${i.id},-1)">−</button>
+        <button class="iconbtn" onclick="adjust(${i.id},1)">+</button>
+        <button class="btn danger sm" onclick="del('inventory',${i.id},'${esc(i.name)}')">Delete</button>
+      </td></tr>`;
+  });
+  $('tableHost').innerHTML = table(['SKU', 'Item', 'Category', 'Vendor', 'Qty', 'Reorder', 'Price', ''], rows);
+}
+function renderInvoices() {
+  const statuses = ['draft', 'sent', 'paid', 'overdue', 'void'];
+  const rows = state.invoices.flatMap((inv) => {
+    const main = `<tr>
+      <td class="mono"><b>${esc(inv.invoice_number)}</b></td>
+      <td>${esc(inv.client_name || '—')}${inv.client_company ? `<br><span class="muted">${esc(inv.client_company)}</span>` : ''}</td>
+      <td class="muted mono">${esc(inv.issue_date)}</td>
+      <td><select class="status" onchange="setStatus(${inv.id}, this.value)">${statuses.map((s) => `<option ${s === inv.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+      <td class="mono"><b>${money(inv.total)}</b></td>
+      <td style="white-space:nowrap">
+        <button class="btn ghost sm" onclick="toggleInvoice(${inv.id})">${state.expanded === inv.id ? 'Hide' : 'View'}</button>
+        <button class="btn danger sm" onclick="del('invoices',${inv.id},'${esc(inv.invoice_number)}')">Delete</button>
+      </td></tr>`;
+    if (state.expanded !== inv.id) return [main];
+    const d = state._detail;
+    const inner = !d ? '<tr class="detail"><td colspan="6"><div class="inner muted">Loading…</div></td></tr>'
+      : `<tr class="detail"><td colspan="6"><div class="inner">
+          ${d.notes ? `<div class="muted" style="margin-bottom:8px">${esc(d.notes)}</div>` : ''}
+          <table><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Line total</th></tr></thead>
+          <tbody>${d.items.map((it) => `<tr><td>${esc(it.description)}</td><td class="mono">${it.quantity}</td><td class="mono">${money(it.unit_price)}</td><td class="mono">${money(it.line_total)}</td></tr>`).join('')}</tbody></table>
+          <div class="totals">
+            <div><div class="muted">Subtotal</div><div class="t-val mono">${money(d.subtotal)}</div></div>
+            <div><div class="muted">Tax (${d.tax_rate}%)</div><div class="t-val mono">${money(d.tax)}</div></div>
+            <div><div class="muted">Total</div><div class="t-val grand mono">${money(d.total)}</div></div>
+          </div></div></td></tr>`;
+    return [main, inner];
+  });
+  $('tableHost').innerHTML = table(['Invoice #', 'Client', 'Issued', 'Status', 'Total', ''], rows);
+}
+
+function apptTime(t){let[h,m]=String(t).split(':').map(Number);const ap=h<12?'AM':'PM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
+function renderAppointments() {
+  const st = ['requested', 'confirmed', 'completed', 'cancelled'];
+  const rows = state.appointments.map((a) => `<tr>
+    <td class="mono"><b>${esc(a.appt_date)}</b><br><span class="muted">${apptTime(a.appt_time)}</span></td>
+    <td><b>${esc(a.client_name)}</b>${a.email ? `<br><span class="muted">${esc(a.email)}</span>` : ''}</td>
+    <td class="muted mono">${esc(a.phone || '—')}</td>
+    <td>${esc(a.service || '—')}</td>
+    <td><select class="status" onchange="setApptStatus(${a.id}, this.value)">${st.map((s) => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+    <td style="white-space:nowrap">
+      ${a.status === 'confirmed' && !a.reminder_sent ? `<button class="btn sm" onclick="remindAppt(${a.id})">Remind</button>` : (a.reminder_sent ? '<span class="pill paid">reminded</span>' : '')}
+      <button class="btn danger sm" onclick="del('appointments',${a.id},'this appointment')">Delete</button>
+    </td></tr>`);
+  $('tableHost').innerHTML = table(['When', 'Client', 'Phone', 'Service', 'Status', ''], rows);
+}
+function renderReviews() {
+  const rows = state.reviews.map((r) => `<tr>
+    <td><b>${esc(r.client_name)}</b></td>
+    <td style="color:var(--amber);white-space:nowrap">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+    <td class="muted">${esc(r.service || '—')}</td>
+    <td class="muted" style="max-width:360px">${esc(r.body || '')}</td>
+    <td>${r.approved ? '<span class="pill paid">approved</span>' : '<span class="pill draft">pending</span>'}</td>
+    <td style="white-space:nowrap">
+      ${r.approved ? `<button class="btn ghost sm" onclick="approveReview(${r.id},false)">Unapprove</button>` : `<button class="btn sm" onclick="approveReview(${r.id},true)">Approve</button>`}
+      <button class="btn danger sm" onclick="del('reviews',${r.id},'this review')">Delete</button>
+    </td></tr>`);
+  $('tableHost').innerHTML = table(['Name', 'Rating', 'Service', 'Review', 'Status', ''], rows);
+}
+async function setApptStatus(id, status) { try { await api(`/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }); toast('Appointment ' + status); await loadAll(); } catch (e) { toast(e.message, true); } }
+async function remindAppt(id) { try { await api(`/appointments/${id}/remind`, { method: 'POST' }); toast('Reminder sent (demo)'); await loadAll(); } catch (e) { toast(e.message, true); } }
+async function approveReview(id, approved) { try { await api(`/reviews/${id}/approve`, { method: 'PATCH', body: JSON.stringify({ approved }) }); toast(approved ? 'Approved' : 'Unapproved'); await loadAll(); } catch (e) { toast(e.message, true); } }
+
+const ta = 'width:100%;background:var(--panel-2);color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:.92rem';
+function renderContent() {
+  const rows = state.content.map(c => `<div style="padding:16px 18px;border-bottom:1px solid var(--line)">
+    <label style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600">${esc(c.label)}</label>
+    <textarea id="cms_${c.id}" style="${ta};margin-top:6px;min-height:${c.type === 'textarea' ? '78px' : '44px'}">${esc(c.value || '')}</textarea>
+    <button class="btn sm" style="margin-top:8px" onclick="saveContent(${c.id})">Save</button>
+  </div>`);
+  $('tableHost').innerHTML = `<div>${rows.join('') || '<div class="empty">No content fields.</div>'}</div>`;
+}
+async function saveContent(id) { try { await api('/content/' + id, { method: 'PUT', body: JSON.stringify({ value: document.getElementById('cms_' + id).value }) }); toast('Saved'); await loadAll(); } catch (e) { toast(e.message, true); } }
+
+function renderServices() {
+  const rows = state.services.map(s => `<div style="padding:18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:start">
+    <div><img src="${esc(s.image || '')}" style="width:100%;height:88px;object-fit:cover;border-radius:8px;background:var(--panel-2)"><div class="muted" style="font-size:11px;margin-top:6px">order #${s.sort}</div></div>
+    <div>
+      <input id="sv_t_${s.id}" value="${esc(s.title)}" placeholder="Title" style="${ta};font-weight:700;margin-bottom:8px">
+      <input id="sv_s_${s.id}" value="${esc(s.short || '')}" placeholder="Short blurb shown on the card" style="${ta};margin-bottom:8px">
+      <input id="sv_i_${s.id}" value="${esc(s.image || '')}" placeholder="Image URL" style="${ta};margin-bottom:8px;font-size:.8rem">
+      <textarea id="sv_b_${s.id}" placeholder="Detailed text shown in the pop-up" style="${ta};min-height:90px">${esc(s.body || '')}</textarea>
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="btn sm" onclick="saveService(${s.id})">Save</button><button class="btn danger sm" onclick="del('services',${s.id},'${esc(s.title)}')">Delete</button></div>
+    </div></div>`);
+  $('tableHost').innerHTML = rows.join('') + `<div style="padding:18px"><button class="btn" onclick="addService()">+ Add service</button></div>`;
+}
+async function saveService(id) {
+  const b = { title: document.getElementById('sv_t_' + id).value, short: document.getElementById('sv_s_' + id).value, image: document.getElementById('sv_i_' + id).value, body: document.getElementById('sv_b_' + id).value };
+  try { await api('/services/' + id, { method: 'PUT', body: JSON.stringify(b) }); toast('Service saved'); await loadAll(); } catch (e) { toast(e.message, true); }
+}
+async function addService() { const title = prompt('New service title?'); if (!title) return; try { await api('/services', { method: 'POST', body: JSON.stringify({ title, short: 'Describe this service…', body: '' }) }); toast('Service added — edit its details'); await loadAll(); } catch (e) { toast(e.message, true); } }
+
+/* ---------- add form ---------- */
+const FORMS = {
+  clients: [['name', 'Name *'], ['company', 'Company'], ['email', 'Email'], ['phone', 'Phone'], ['city', 'City']],
+  vendors: [['name', 'Name *'], ['category', 'Category'], ['contact_name', 'Contact'], ['email', 'Email'], ['phone', 'Phone']],
+  inventory: [['sku', 'SKU *'], ['name', 'Name *'], ['category', 'Category'], ['unit_price', 'Unit price'], ['quantity', 'Quantity'], ['reorder_level', 'Reorder level']],
+  invoices: null, appointments: null, reviews: null, content: null, services: null,
+};
+function buildAddForm() {
+  const f = FORMS[state.tab];
+  const host = $('addForm'); const btn = $('addBtn');
+  if (!f) { btn.style.display = 'none'; host.className = 'addform'; return; }
+  btn.style.display = '';
+  host.dataset.fields = JSON.stringify(f);
+  host.innerHTML = f.map(([k, l]) => `<div><label>${l}</label><input id="f_${k}" placeholder="${l.replace(' *','')}"></div>`).join('')
+    + `<div class="actions"><button class="btn" onclick="submitAdd()">Save</button><button class="btn ghost" onclick="toggleAdd()">Cancel</button></div>`;
+}
+function toggleAdd() { $('addForm').classList.toggle('open'); }
+async function submitAdd() {
+  const f = JSON.parse($('addForm').dataset.fields);
+  const body = {};
+  f.forEach(([k]) => { const v = $('f_' + k).value.trim(); if (v) body[k] = ['unit_price', 'quantity', 'reorder_level'].includes(k) ? Number(v) : v; });
+  try {
+    await api('/' + state.tab, { method: 'POST', body: JSON.stringify(body) });
+    toast('Added'); toggleAdd(); await loadAll();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- actions ---------- */
+async function del(res, id, name) {
+  if (!confirm(`Delete ${name}?`)) return;
+  try { await api(`/${res}/${id}`, { method: 'DELETE' }); toast('Deleted'); await loadAll(); }
+  catch (e) { toast(e.message, true); }
+}
+async function adjust(id, delta) {
+  try { await api(`/inventory/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta }) }); await loadAll(); }
+  catch (e) { toast(e.message, true); }
+}
+async function setStatus(id, status) {
+  try { await api(`/invoices/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }); toast('Status updated'); await loadAll(); }
+  catch (e) { toast(e.message, true); }
+}
+async function toggleInvoice(id) {
+  if (state.expanded === id) { state.expanded = null; state._detail = null; return render(); }
+  state.expanded = id; state._detail = null; render();
+  try { state._detail = await api('/invoices/' + id); render(); }
+  catch (e) { toast(e.message, true); }
+}
+
+loadAll();
+</script>
+</body>
+</html>

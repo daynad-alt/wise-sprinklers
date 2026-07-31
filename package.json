@@ -1,0 +1,14 @@
+{
+  "name": "wise-backend-netlify",
+  "version": "1.0.0",
+  "description": "Wise Sprinklers & Lighting demo management API as a Netlify Function (in-memory store).",
+  "scripts": {
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@netlify/neon": "^0.1.0",
+    "express": "^4.19.2",
+    "serverless-http": "^3.2.0"
+  }
+}

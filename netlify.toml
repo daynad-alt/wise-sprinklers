@@ -1,0 +1,16 @@
+# Netlify configuration for the Wise demo API.
+# Everything under /api/* is served by the single serverless function.
+
+[build]
+  command   = "echo no build step needed"
+  functions = "netlify/functions"
+  publish   = "public"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Public /api/* → the function (which strips the prefix internally)
+[[redirects]]
+  from = "/api/*"
+  to   = "/.netlify/functions/api/:splat"
+  status = 200

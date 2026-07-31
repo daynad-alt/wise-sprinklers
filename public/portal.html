@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wise Sprinklers — Pay Your Invoice</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--forest:#0a1c12;--panel:#0e2618;--panel2:#123322;--green:#37d45f;--green2:#20a349;--cream:#f3efe4;--dim:rgba(243,239,228,.62);--faint:rgba(243,239,228,.4);--line:rgba(243,239,228,.13);--amber:#f0b447;--red:#ef6a5a;--header:#080a09}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--forest);color:var(--cream);font-family:"DM Sans",sans-serif;line-height:1.5}
+a{color:var(--green);text-decoration:none}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;background:var(--header);border-bottom:1px solid var(--line)}
+header img{height:56px}
+header a{font-size:13px}
+.wrap{max-width:820px;margin:0 auto;padding:48px 20px}
+h1{font-family:"Bricolage Grotesque";font-weight:800;font-size:clamp(2rem,5vw,3rem);letter-spacing:-.02em}
+h1 em{color:var(--green);font-style:normal}
+.sub{color:var(--dim);margin-top:10px;max-width:52ch}
+.lookup{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap}
+.lookup input{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);color:var(--cream);border-radius:12px;padding:14px 16px;font-family:"DM Sans";font-size:1rem}
+.lookup button{background:var(--green);color:var(--forest);border:none;border-radius:12px;padding:14px 24px;font-weight:700;font-family:"Bricolage Grotesque";cursor:pointer;font-size:1rem}
+.lookup button:hover{background:#4ee06e}
+.hint{color:var(--faint);font-size:.82rem;margin-top:10px}
+#result{margin-top:34px}
+.who{font-weight:700;font-size:1.1rem;margin-bottom:16px}
+.inv{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.inv .meta .num{font-family:"Bricolage Grotesque";font-weight:700;font-size:1.15rem}
+.inv .meta .date{color:var(--dim);font-size:.85rem;margin-top:3px}
+.inv .right{display:flex;align-items:center;gap:18px}
+.inv .amt{font-family:"Bricolage Grotesque";font-weight:700;font-size:1.3rem}
+.pill{font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;text-transform:capitalize}
+.pill.paid{background:rgba(55,212,95,.16);color:var(--green)}
+.pill.sent{background:rgba(240,180,71,.16);color:var(--amber)}
+.pill.overdue{background:rgba(239,106,90,.18);color:var(--red)}
+.pill.draft{background:rgba(243,239,228,.12);color:var(--cream)}
+.pay{background:var(--green);color:var(--forest);border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-family:"Bricolage Grotesque";cursor:pointer}
+.pay:hover{background:#4ee06e}
+.pay:disabled{opacity:.5;cursor:default}
+.empty{color:var(--faint);padding:30px 0;text-align:center}
+.note{margin-top:24px;color:var(--faint);font-size:.8rem}
+#msg{margin-top:14px;font-weight:600}
+#msg.ok{color:var(--green)} #msg.err{color:var(--red)}
+.demo{display:inline-block;margin-top:8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(240,180,71,.4);border-radius:20px;padding:4px 10px}
+</style>
+</head>
+<body>
+<header>
+  <a href="/"><img src="/api/media/logo.png" alt="Wise Sprinklers & Lighting" /></a>
+  <a href="/">← Back to site</a>
+</header>
+<div class="wrap">
+  <h1>Pay your <em>invoice</em></h1>
+  <p class="sub">Enter the email on your account to see your invoices and pay online.</p>
+  <span class="demo">Demo payments — no real charge</span>
+  <form class="lookup" id="lookup">
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+    <button type="submit">Find invoices</button>
+  </form>
+  <p class="hint">Try a seeded customer: <b>rmueller@example.com</b> or <b>priya.nair@example.com</b></p>
+  <div id="msg"></div>
+  <div id="result"></div>
+</div>
+<script>
+const api=(p,o)=>fetch('/api'+p,Object.assign({headers:{'Content-Type':'application/json'}},o)).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});
+const $=id=>document.getElementById(id);
+const money=n=>'$'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let currentEmail='';
+$('lookup').addEventListener('submit',async e=>{e.preventDefault();lookup($('email').value.trim());});
+async function lookup(email){
+  currentEmail=email; const msg=$('msg'); msg.textContent=''; const box=$('result');
+  if(!email){msg.className='err';msg.textContent='Enter your email.';return;}
+  box.innerHTML='<div class="empty">Looking…</div>';
+  try{
+    const d=await api('/portal?email='+encodeURIComponent(email));
+    if(!d.found){box.innerHTML='<div class="empty">No account found for that email. Check spelling or call 281·910·4283.</div>';return;}
+    render(d);
+  }catch(e){box.innerHTML='';msg.className='err';msg.textContent=e.message;}
+}
+function render(d){
+  const box=$('result');
+  const rows=d.invoices.map(inv=>`<div class="inv">
+    <div class="meta"><div class="num">${esc(inv.invoice_number)}</div><div class="date">Issued ${esc(inv.issue_date)}${inv.due_date?` · due ${esc(inv.due_date)}`:''}</div></div>
+    <div class="right">
+      <span class="pill ${inv.status}">${inv.status}</span>
+      <span class="amt">${money(inv.total)}</span>
+      ${inv.paid?'<span class="pill paid">Paid ✓</span>':`<button class="pay" onclick="pay(${inv.id},this)">Pay now</button>`}
+    </div></div>`).join('');
+  box.innerHTML=`<div class="who">Hi ${esc(d.client.name)} — ${d.invoices.filter(i=>!i.paid).length} unpaid of ${d.invoices.length} invoice(s)</div>${rows||'<div class="empty">No invoices on file.</div>'}<p class="note">Demo mode: “Pay now” marks the invoice paid in the system — no card is charged.</p>`;
+}
+async function pay(id,btn){
+  btn.disabled=true;btn.textContent='Processing…';const msg=$('msg');
+  try{
+    const r=await api('/invoices/'+id+'/pay',{method:'POST',body:JSON.stringify({method:'card (demo)'})});
+    msg.className='ok';msg.textContent='✓ Payment of '+money(r.amount)+' received. Thank you!';
+    lookup(currentEmail);
+  }catch(e){btn.disabled=false;btn.textContent='Pay now';msg.className='err';msg.textContent=e.message;}
+}
+</script>
+</body>
+</html>
