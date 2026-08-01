@@ -225,6 +225,61 @@ function makeEnsureReady(db) {
 /* --------------------------------- app ----------------------------------- */
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const eesc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const prettyTime = (t) => { let [h, m] = String(t).split(':').map(Number); const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12; return h + ':' + String(m).padStart(2, '0') + ' ' + ap; };
+
+/* ---------- email (sends through the company's own GoDaddy mailbox via SMTP) ---------- */
+function emailTransport() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  let nodemailer; try { nodemailer = require('nodemailer'); } catch (e) { return null; }
+  const port = Number(process.env.SMTP_PORT || 465);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST, port, secure: port === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+}
+const LOGO = 'https://wisesprinklers.netlify.app/api/media/logo.png';
+function emailShell(inner) {
+  return `<div style="background:#0a1c12;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
+    <div style="max-width:560px;margin:0 auto;background:#0e2618;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06)">
+      <div style="background:#080a09;padding:18px;text-align:center"><img src="${LOGO}" alt="Wise Sprinklers &amp; Lighting" style="height:52px"></div>
+      <div style="padding:30px 28px">${inner}</div>
+      <div style="background:#080a09;padding:14px;text-align:center;color:#6a776e;font-size:12px">Wise Sprinklers &amp; Lighting · Friendswood, TX · Licensed &amp; Insured · <a href="tel:2819104283" style="color:#37d45f;text-decoration:none">281·910·4283</a></div>
+    </div></div>`;
+}
+function detailRow(label, val) {
+  return `<tr><td style="padding:9px 0;color:#8ea79a;font-size:14px;border-bottom:1px solid rgba(255,255,255,.06)">${eesc(label)}</td>
+    <td style="padding:9px 0;text-align:right;color:#f3efe4;font-size:14px;font-weight:bold;border-bottom:1px solid rgba(255,255,255,.06)">${eesc(val)}</td></tr>`;
+}
+async function sendBookingEmails(appt) {
+  const t = emailTransport();
+  if (!t) return { sent: false, reason: 'email not configured' };
+  const from = `"Wise Sprinklers & Lighting" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`;
+  const notify = process.env.NOTIFY_EMAIL || 'nathan@wisesprinklers.com';
+  const when = `${appt.appt_date} at ${prettyTime(appt.appt_time)}`;
+  const custInner = `
+    <h1 style="color:#37d45f;font-size:22px;margin:0 0 8px">Thanks, ${eesc(appt.client_name.split(' ')[0])}! 🌱</h1>
+    <p style="color:#cfd8d0;font-size:15px;line-height:1.6;margin:0 0 20px">We've received your request for a free estimate. A member of our team will reach out shortly to confirm your visit. Here's what we have:</p>
+    <table style="width:100%;border-collapse:collapse">
+      ${detailRow('Service', appt.service || 'General')}${detailRow('Requested date', when)}
+    </table>
+    <p style="color:#8ea79a;font-size:13px;margin-top:24px;line-height:1.6">Need to change something or reach us sooner? Just reply to this email or call <a href="tel:2819104283" style="color:#37d45f">281·910·4283</a>. We look forward to taking care of your yard.</p>`;
+  const bizInner = `
+    <h1 style="color:#37d45f;font-size:21px;margin:0 0 8px">New booking request</h1>
+    <p style="color:#cfd8d0;font-size:14px;margin:0 0 18px">A customer just booked through the website.</p>
+    <table style="width:100%;border-collapse:collapse">
+      ${detailRow('Name', appt.client_name)}${detailRow('Service', appt.service || '—')}
+      ${detailRow('Date / time', when)}${detailRow('Phone', appt.phone || '—')}
+      ${detailRow('Email', appt.email || '—')}${appt.notes ? detailRow('Notes', appt.notes) : ''}
+    </table>
+    <p style="color:#8ea79a;font-size:13px;margin-top:20px">Reply to this email to reach the customer directly.</p>`;
+  const jobs = [];
+  if (appt.email) jobs.push(t.sendMail({ from, to: appt.email, subject: 'We received your request — Wise Sprinklers & Lighting', html: emailShell(custInner) }));
+  jobs.push(t.sendMail({ from, to: notify, replyTo: appt.email || undefined, subject: `New booking: ${appt.client_name} — ${when}`, html: emailShell(bizInner) }));
+  const results = await Promise.allSettled(jobs);
+  const failed = results.filter((r) => r.status === 'rejected');
+  return { sent: failed.length === 0, delivered: results.length - failed.length, failed: failed.length, error: failed[0]?.reason?.message };
+}
 
 function createApp(db) {
   const ensureReady = makeEnsureReady(db);
@@ -476,7 +531,9 @@ function createApp(db) {
       `INSERT INTO appointments (client_name, email, phone, service, address, appt_date, appt_time, notes, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'requested') RETURNING *`,
       [b.client_name, b.email ?? null, b.phone ?? null, b.service ?? null, b.address ?? null, b.appt_date, b.appt_time, b.notes ?? null]);
-    res.status(201).json(r);
+    let email;
+    try { email = await sendBookingEmails(r); } catch (e) { email = { sent: false, error: String(e && e.message) }; }
+    res.status(201).json({ ...r, email });
   }));
 
   app.get('/appointments', wrap(async (req, res) => {
