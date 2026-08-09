@@ -245,6 +245,41 @@ function emailTransport() {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
 }
+/* ---------- customer portal magic links ----------
+ * Stateless signed tokens: no schema change, nothing to clean up, and an
+ * invoice cannot be reached by guessing an id or an email address.
+ * Signed with ADMIN_TOKEN under a separate label so a portal token can never
+ * be replayed as an admin credential.
+ */
+const PORTAL_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // a week
+const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = (s) => Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+const portalSecret = () => process.env.ADMIN_TOKEN || '';
+const portalSign = (payload) =>
+  b64u(require('crypto').createHmac('sha256', portalSecret()).update('portal.v1:' + payload).digest());
+
+function makePortalToken(email) {
+  const payload = b64u(JSON.stringify({ e: String(email).toLowerCase(), x: Date.now() + PORTAL_TTL_MS }));
+  return payload + '.' + portalSign(payload);
+}
+// Returns the email the token is good for, or null.
+function readPortalToken(token) {
+  if (!portalSecret() || !token) return null;
+  const [payload, sig] = String(token).split('.');
+  if (!payload || !sig) return null;
+  const a = Buffer.from(sig), b = Buffer.from(portalSign(payload));
+  if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) return null;
+  let data;
+  try { data = JSON.parse(unb64u(payload)); } catch (e) { return null; }
+  if (!data || !data.e || !data.x || Date.now() > Number(data.x)) return null;
+  return String(data.e).toLowerCase();
+}
+function portalBaseUrl(req) {
+  if (process.env.SITE_URL) return String(process.env.SITE_URL).replace(/\/+$/, '');
+  const host = req.get('x-forwarded-host') || req.get('host') || 'wisesprinklers.com';
+  return `https://${host}`;
+}
+
 const LOGO = 'https://wisesprinklers.netlify.app/api/media/logo.png';
 function emailShell(inner) {
   return `<div style="background:#0a1c12;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
@@ -288,6 +323,19 @@ async function sendBookingEmails(appt) {
   return { sent: failed.length === 0, delivered: results.length - failed.length, failed: failed.length, error: failed[0]?.reason?.message };
 }
 
+async function sendPortalLink(client, link) {
+  const t = emailTransport();
+  if (!t) return { sent: false, reason: 'email not configured' };
+  const from = `"Wise Sprinklers & Lighting" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`;
+  const inner = `
+    <h1 style="color:#37d45f;font-size:22px;margin:0 0 8px">Your invoices</h1>
+    <p style="color:#cfd8d0;font-size:15px;line-height:1.6;margin:0 0 20px">Hi ${eesc(String(client.name || '').split(' ')[0])}, here's your secure link. It works for 7 days and is just for you — please don't forward it.</p>
+    <p style="margin:0 0 24px"><a href="${eesc(link)}" style="background:#37d45f;color:#08160e;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px;display:inline-block">View my invoices</a></p>
+    <p style="color:#8ea79a;font-size:13px;line-height:1.6">If you didn't ask for this, you can ignore it — nothing has changed on your account. Questions? Call <a href="tel:2819104283" style="color:#37d45f">281·910·4283</a>.</p>`;
+  await t.sendMail({ from, to: client.email, subject: 'Your invoice link — Wise Sprinklers & Lighting', html: emailShell(inner) });
+  return { sent: true };
+}
+
 function createApp(db) {
   const ensureReady = makeEnsureReady(db);
   const one = async (text, params) => (await db(text, params))[0];
@@ -321,20 +369,30 @@ function createApp(db) {
     ['GET', /^\/services$/], ['GET', /^\/reviews$/], ['GET', /^\/content$/],
     ['GET', /^\/media\/[^/]+$/], ['GET', /^\/availability$/],
     ['POST', /^\/appointments$/],          // the booking form
-    ['GET', /^\/portal$/],                 // customer invoice portal
-    ['GET', /^\/invoices\/\d+$/],          // portal opens one invoice
+    // Portal routes are reachable without the admin token, but each handler
+    // below requires a signed portal token instead. They are not open.
+    ['POST', /^\/portal\/request$/],
+    ['GET', /^\/portal$/],
+    ['GET', /^\/invoices\/\d+$/],
+    ['POST', /^\/invoices\/\d+\/pay$/],
   ];
   const timingSafeEqual = (a, b) => {
     const x = Buffer.from(String(a)), y = Buffer.from(String(b));
     return x.length === y.length && require('crypto').timingSafeEqual(x, y);
   };
+  // Real validation, not a presence check. PUBLIC routes skip the middleware
+  // entirely, so anything downstream that wants to trust an admin caller must
+  // call this rather than reading the header itself.
+  const isAdmin = (req) => {
+    const expected = process.env.ADMIN_TOKEN;
+    const got = req.get('X-Admin-Token') || '';
+    return !!expected && !!got && timingSafeEqual(got, expected);
+  };
   app.use((req, res, next) => {
     const path = req.url.split('?')[0];
     if (PUBLIC.some(([m, re]) => m === req.method && re.test(path))) return next();
-    const expected = process.env.ADMIN_TOKEN;
-    if (!expected) return res.status(503).json({ error: 'Admin API is not configured (ADMIN_TOKEN unset)' });
-    const got = req.get('X-Admin-Token') || '';
-    if (!got || !timingSafeEqual(got, expected)) return res.status(401).json({ error: 'Unauthorized' });
+    if (!process.env.ADMIN_TOKEN) return res.status(503).json({ error: 'Admin API is not configured (ADMIN_TOKEN unset)' });
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
     next();
   });
 
@@ -488,7 +546,20 @@ function createApp(db) {
        ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY inv.issue_date DESC`, p);
     res.json(rows.map((r) => ({ ...r, subtotal: round2(r.subtotal), total: round2(r.subtotal * (1 + r.tax_rate / 100)) })));
   }));
+  // Reachable from the portal, but only for the invoice the token actually owns.
+  // Admin callers (already past the middleware with a valid X-Admin-Token) skip the check.
+  async function portalMayReadInvoice(req, invoiceId) {
+    if (isAdmin(req)) return true;   // must re-validate: these paths bypass the middleware
+    const email = readPortalToken(req.query.token);
+    if (!email) return false;
+    const owner = await one(
+      `SELECT 1 FROM invoices inv JOIN clients c ON c.id = inv.client_id
+        WHERE inv.id = $1 AND lower(c.email) = lower($2)`, [invoiceId, email]);
+    return !!owner;
+  }
+
   app.get('/invoices/:id', wrap(async (req, res) => {
+    if (!(await portalMayReadInvoice(req, req.params.id))) return res.status(401).json({ error: 'Unauthorized' });
     const inv = await hydrate(req.params.id);
     inv ? res.json(inv) : notFound(res, 'Invoice');
   }));
@@ -648,9 +719,23 @@ function createApp(db) {
   }));
 
   /* ---------------- customer portal + payments (demo) ---------------- */
-  app.get('/portal', wrap(async (req, res) => {
-    const email = (req.query.email || '').trim();
+  // Ask for a link. Always answers the same way so this cannot be used to test
+  // whether an address is a customer.
+  app.post('/portal/request', wrap(async (req, res) => {
+    const email = String(req.body.email || '').trim();
+    const answer = { ok: true, message: 'If that address is on file, a secure link is on its way.' };
     if (!email) return res.status(400).json({ error: 'email is required' });
+    const client = await one('SELECT id, name, email FROM clients WHERE lower(email)=lower($1)', [email]);
+    if (!client) return res.json(answer);
+    if (!portalSecret()) return res.json(answer);   // misconfigured: still don't leak
+    const link = `${portalBaseUrl(req)}/portal.html?token=${makePortalToken(client.email)}`;
+    try { await sendPortalLink(client, link); } catch (e) { console.error('portal link email failed', e); }
+    res.json(answer);
+  }));
+
+  app.get('/portal', wrap(async (req, res) => {
+    const email = readPortalToken(req.query.token);
+    if (!email) return res.status(401).json({ error: 'This link is invalid or has expired. Request a new one.' });
     const client = await one('SELECT id, name, company, email FROM clients WHERE lower(email)=lower($1)', [email]);
     if (!client) return res.json({ found: false, client: null, invoices: [] });
     const invoices = (await db(
@@ -663,6 +748,7 @@ function createApp(db) {
     res.json(await db('SELECT * FROM payments WHERE invoice_id=$1 ORDER BY paid_at DESC', [req.params.id]));
   }));
   app.post('/invoices/:id/pay', wrap(async (req, res) => {
+    if (!(await portalMayReadInvoice(req, req.params.id))) return res.status(401).json({ error: 'Unauthorized' });
     const inv = await one(
       `SELECT inv.*, COALESCE((SELECT SUM(quantity*unit_price) FROM invoice_items WHERE invoice_id=inv.id),0) AS subtotal FROM invoices inv WHERE id=$1`, [req.params.id]);
     if (!inv) return notFound(res, 'Invoice');
@@ -784,4 +870,4 @@ function createApp(db) {
   return app;
 }
 
-module.exports = { createApp, makeEnsureReady, SCHEMA, SEED };
+module.exports = { createApp, makeEnsureReady, SCHEMA, SEED, makePortalToken, readPortalToken };

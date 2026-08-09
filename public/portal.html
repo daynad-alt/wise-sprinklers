@@ -51,13 +51,13 @@ h1 em{color:var(--green);font-style:normal}
 </header>
 <div class="wrap">
   <h1>Pay your <em>invoice</em></h1>
-  <p class="sub">Enter the email on your account to see your invoices and pay online.</p>
+  <p class="sub">Enter the email on your account and we'll send you a secure link to your invoices.</p>
   <span class="demo">Demo payments — no real charge</span>
   <form class="lookup" id="lookup">
     <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
-    <button type="submit">Find invoices</button>
+    <button type="submit">Email me my link</button>
   </form>
-  <p class="hint">Try a seeded customer: <b>rmueller@example.com</b> or <b>priya.nair@example.com</b></p>
+  <p class="hint">For your security, invoices are only reachable through the emailed link. It expires after 7 days.</p>
   <div id="msg"></div>
   <div id="result"></div>
 </div>
@@ -66,18 +66,43 @@ const api=(p,o)=>fetch('/api'+p,Object.assign({headers:{'Content-Type':'applicat
 const $=id=>document.getElementById(id);
 const money=n=>'$'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let currentEmail='';
-$('lookup').addEventListener('submit',async e=>{e.preventDefault();lookup($('email').value.trim());});
-async function lookup(email){
-  currentEmail=email; const msg=$('msg'); msg.textContent=''; const box=$('result');
+let portalToken='';
+$('lookup').addEventListener('submit',async e=>{e.preventDefault();requestLink($('email').value.trim());});
+
+// Step 1: ask for a link. The reply is deliberately identical whether or not
+// the address is on file, so this can't be used to fish for customers.
+async function requestLink(email){
+  const msg=$('msg'); msg.textContent=''; const box=$('result');
   if(!email){msg.className='err';msg.textContent='Enter your email.';return;}
-  box.innerHTML='<div class="empty">Looking…</div>';
+  box.innerHTML='<div class="empty">Sending…</div>';
   try{
-    const d=await api('/portal?email='+encodeURIComponent(email));
-    if(!d.found){box.innerHTML='<div class="empty">No account found for that email. Check spelling or call 281·910·4283.</div>';return;}
-    render(d);
+    const d=await api('/portal/request',{method:'POST',body:JSON.stringify({email})});
+    box.innerHTML='<div class="empty">'+esc(d.message||'If that address is on file, a secure link is on its way.')+'<br><br>The link is good for 7 days. Check your spam folder if it doesn’t arrive in a minute.</div>';
   }catch(e){box.innerHTML='';msg.className='err';msg.textContent=e.message;}
 }
+
+// Step 2: arriving from the emailed link.
+async function loadFromToken(token){
+  portalToken=token; const msg=$('msg'); msg.textContent=''; const box=$('result');
+  box.innerHTML='<div class="empty">Loading your invoices…</div>';
+  try{
+    const d=await api('/portal?token='+encodeURIComponent(token));
+    if(!d.found){box.innerHTML='<div class="empty">No account found. Call 281·910·4283.</div>';return;}
+    render(d);
+  }catch(e){
+    box.innerHTML='';msg.className='err';
+    msg.textContent=e.message+' Enter your email above to get a fresh link.';
+  }
+}
+(function(){
+  const t=new URLSearchParams(location.search).get('token');
+  if(t){
+    // Drop the token from the address bar so it isn't kept in history or leaked
+    // in a Referer header; it stays in memory for this page's own calls.
+    history.replaceState(null,'',location.pathname);
+    loadFromToken(t);
+  }
+})();
 function render(d){
   const box=$('result');
   const rows=d.invoices.map(inv=>`<div class="inv">
@@ -92,9 +117,9 @@ function render(d){
 async function pay(id,btn){
   btn.disabled=true;btn.textContent='Processing…';const msg=$('msg');
   try{
-    const r=await api('/invoices/'+id+'/pay',{method:'POST',body:JSON.stringify({method:'card (demo)'})});
+    const r=await api('/invoices/'+id+'/pay?token='+encodeURIComponent(portalToken),{method:'POST',body:JSON.stringify({method:'card (demo)'})});
     msg.className='ok';msg.textContent='✓ Payment of '+money(r.amount)+' received. Thank you!';
-    lookup(currentEmail);
+    loadFromToken(portalToken);
   }catch(e){btn.disabled=false;btn.textContent='Pay now';msg.className='err';msg.textContent=e.message;}
 }
 </script>
