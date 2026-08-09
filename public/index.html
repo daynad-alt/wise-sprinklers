@@ -115,11 +115,13 @@ section{position:relative;padding:0 clamp(18px,4vw,54px)}
 .glass .sub{font-size:.85rem;color:var(--cream-dim);margin-top:5px;margin-bottom:18px}
 .field{position:relative;margin-bottom:12px}
 .field label{position:absolute;top:9px;left:15px;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--cream-faint);font-weight:600;pointer-events:none}
-.field input,.field select{width:100%;padding:26px 15px 10px;border-radius:12px;border:1px solid rgba(245,241,231,.22);
+.field input,.field select,.field textarea{width:100%;padding:26px 15px 10px;border-radius:12px;border:1px solid rgba(245,241,231,.22);
   background:rgba(10,28,18,.34);color:var(--cream);font-family:"DM Sans";font-size:.95rem;font-weight:500;outline:none;transition:border-color .3s,background .3s;cursor:none}
 .field input::placeholder{color:transparent}
+.field textarea::placeholder{color:var(--cream-faint)}
+.field textarea{min-height:72px;resize:vertical}
 .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23f5f1e7' stroke-width='2'%3E%3Cpath d='M3 5l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center}
-.field input:focus,.field select:focus{border-color:var(--emerald-bright);background:rgba(10,28,18,.5)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--emerald-bright);background:rgba(10,28,18,.5)}
 .field select option{background:#0e2618;color:var(--cream)}
 .grow2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .glass button{width:100%;margin-top:6px;padding:16px;border:none;border-radius:12px;background:var(--emerald-bright);color:var(--forest);
@@ -310,10 +312,10 @@ footer a:hover{color:var(--emerald-bright)}
         <div class="field"><label for="nm">Name</label><input id="nm" name="nm" placeholder="Name" autocomplete="name"></div>
         <div class="field"><label for="ph">Phone</label><input id="ph" name="ph" type="tel" placeholder="Phone" autocomplete="tel"></div>
       </div>
-      <div class="field"><label for="hbDate">Preferred date</label><input type="date" id="hbDate" name="hbDate"></div>
-      <div id="hbSlots" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"><span style="color:var(--cream-faint);font-size:.8rem">Pick a date to see open times</span></div>
+      <div class="field"><label for="em">Email</label><input id="em" name="em" type="email" placeholder="Email" autocomplete="email"></div>
+      <div class="field"><label for="msg2">Additional info</label><textarea id="msg2" name="msg2" placeholder="Anything we should know? (optional)"></textarea></div>
       <button type="submit" data-cursor="book">
-        Book my free estimate
+        Request my free estimate
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
       <p class="orcall">or call us now at <a href="tel:2819104283">281·910·4283</a></p>
@@ -431,8 +433,8 @@ footer a:hover{color:var(--emerald-bright)}
   <div class="eyebrow" data-fade>Book online</div>
   <div class="book-grid">
     <div class="book-lead">
-      <h2 data-fade>Reserve your <em>appointment.</em></h2>
-      <p data-fade>Pick a day and time that works for you. We'll confirm and send a reminder before we arrive — no phone tag.</p>
+      <h2 data-fade>Request your <em>free estimate.</em></h2>
+      <p data-fade>Send us your details and we'll reach out the same day to confirm and schedule your visit — no phone tag.</p>
       <ul>
         <li data-fade><b>✓</b> Same friendly, licensed crew</li>
         <li data-fade><b>✓</b> Free on-site estimate</li>
@@ -441,10 +443,6 @@ footer a:hover{color:var(--emerald-bright)}
     </div>
     <form class="bk-card" id="bkForm" data-fade>
       <h3>Request a visit</h3>
-      <label for="bkDate">Choose a date</label>
-      <input type="date" id="bkDate" />
-      <label>Available times</label>
-      <div class="slots" id="bkSlots"><span class="muted" style="color:var(--cream-faint);font-size:.85rem">Pick a date to see times</span></div>
       <div class="grow2">
         <div><label for="bkName">Name</label><input id="bkName" placeholder="Your name" /></div>
         <div><label for="bkPhone">Phone</label><input id="bkPhone" type="tel" placeholder="Phone" /></div>
@@ -658,76 +656,38 @@ if(matchMedia('(prefers-reduced-motion:reduce)').matches){gsap.globalTimeline.ti
   const api = (p,o)=>fetch('/api'+p,Object.assign({headers:{'Content-Type':'application/json'}},o)).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;});
   const $=id=>document.getElementById(id);
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  let picked=null;
-
-  // date defaults
-  const d=$('bkDate'); if(d){
-    const today=new Date(); const t=new Date(today.getTime()+864e5);
-    const iso=x=>x.toISOString().slice(0,10);
-    d.min=iso(today); d.value=iso(t);
-    d.addEventListener('change',loadSlots); loadSlots();
-  }
-  async function loadSlots(){
-    picked=null; const host=$('bkSlots'); host.innerHTML='<span style="color:var(--cream-faint);font-size:.85rem">Loading…</span>';
-    try{
-      const a=await api('/availability?date='+d.value);
-      if(!a.open){host.innerHTML='<span style="color:#ef6a5a;font-size:.85rem">Closed that day — pick Mon–Sat.</span>';return;}
-      host.innerHTML='';
-      a.slots.forEach(s=>{const b=document.createElement('button');b.type='button';b.className='slot';b.textContent=fmt(s.time);b.disabled=!s.available;
-        b.onclick=()=>{[...host.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');picked=s.time;};
-        host.appendChild(b);});
-    }catch(e){host.innerHTML='<span style="color:#ef6a5a;font-size:.85rem">'+esc(e.message)+'</span>';}
-  }
-  function fmt(t){let[h,m]=t.split(':').map(Number);const ap=h<12?'AM':'PM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
-
+  // ---- Request a visit: contact info + service + notes (no scheduling) ----
   const bf=$('bkForm');
   if(bf) bf.addEventListener('submit',async e=>{
     e.preventDefault(); const msg=$('bkMsg');
-    if(!$('bkName').value.trim()){msg.className='bk-msg err';msg.textContent='Please enter your name.';return;}
-    if(!picked){msg.className='bk-msg err';msg.textContent='Please pick an available time.';return;}
-    msg.className='bk-msg';msg.textContent='Booking…';
+    const name=$('bkName').value.trim();
+    if(!name){msg.className='bk-msg err';msg.textContent='Please enter your name.';return;}
+    if(!$('bkPhone').value.trim() && !$('bkEmail').value.trim()){msg.className='bk-msg err';msg.textContent='Please add a phone or email so we can reach you.';return;}
+    msg.className='bk-msg';msg.textContent='Sending…';
     try{
-      const r=await api('/appointments',{method:'POST',body:JSON.stringify({client_name:$('bkName').value.trim(),email:$('bkEmail').value.trim(),phone:$('bkPhone').value.trim(),service:$('bkSvc').value,appt_date:d.value,appt_time:picked,notes:$('bkNotes').value.trim()})});
-      msg.className='bk-msg ok';msg.textContent='✓ Requested for '+d.value+' at '+fmt(picked)+'. We’ll confirm shortly!';
-      bf.reset(); d.value=d.value; loadSlots();
+      await api('/appointments',{method:'POST',body:JSON.stringify({client_name:name,email:$('bkEmail').value.trim(),phone:$('bkPhone').value.trim(),service:$('bkSvc').value,notes:$('bkNotes').value.trim()})});
+      msg.className='bk-msg ok';msg.textContent='✓ Request sent! We’ll reach out the same day to schedule.';
+      bf.reset();
     }catch(e){msg.className='bk-msg err';msg.textContent=e.message;}
   });
 
-  // hero "Get a free estimate" widget -> real booking on the calendar
+  // hero "Get a free estimate" widget -> estimate request (contact + service + notes)
   function showToast(m,err){const t=$('toast');if(!t){return;}t.textContent=m;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',3600);}
-  const hd=$('hbDate');
-  if(hd){
-    let pickedH=null;
-    const iso=x=>x.toISOString().slice(0,10);
-    const nextDay=()=>iso(new Date(Date.now()+864e5));
-    hd.min=iso(new Date()); hd.value=nextDay();
-    const loadH=async()=>{
-      pickedH=null; const host=$('hbSlots');
-      host.innerHTML='<span style="color:var(--cream-faint);font-size:.8rem">Loading…</span>';
-      try{
-        const a=await api('/availability?date='+hd.value);
-        if(!a.open){host.innerHTML='<span style="color:#ef6a5a;font-size:.8rem">Closed that day — pick Mon–Sat.</span>';return;}
-        host.innerHTML='';
-        a.slots.forEach(s=>{const b=document.createElement('button');b.type='button';b.className='slot';b.textContent=fmt(s.time);b.disabled=!s.available;
-          b.onclick=()=>{[...host.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');pickedH=s.time;};host.appendChild(b);});
-      }catch(e){host.innerHTML='<span style="color:#ef6a5a;font-size:.8rem">'+esc(e.message)+'</span>';}
-    };
-    hd.addEventListener('change',loadH); loadH();
-    const ef=$('estimate');
-    if(ef) ef.addEventListener('submit',async e=>{
-      e.preventDefault();
-      const nm=($('nm').value||'').trim();
-      if(!nm){showToast('Please enter your name',true);return;}
-      if(!pickedH){showToast('Please pick an available time',true);return;}
-      const btn=ef.querySelector('button[type=submit]'); const old=btn.innerHTML; btn.innerHTML='Booking…';
-      try{
-        await api('/appointments',{method:'POST',body:JSON.stringify({client_name:nm,phone:($('ph').value||'').trim(),service:$('svc').value,appt_date:hd.value,appt_time:pickedH})});
-        showToast('✓ Booked '+hd.value+' at '+fmt(pickedH)+' — we’ll confirm soon!');
-        ef.reset(); hd.value=nextDay(); loadH();
-      }catch(err){showToast(err.message,true);}
-      finally{btn.innerHTML=old;}
-    });
-  }
+  const ef=$('estimate');
+  if(ef) ef.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const nm=($('nm').value||'').trim();
+    if(!nm){showToast('Please enter your name',true);return;}
+    const ph=($('ph').value||'').trim(), em=($('em').value||'').trim();
+    if(!ph && !em){showToast('Add a phone or email so we can reach you',true);return;}
+    const btn=ef.querySelector('button[type=submit]'); const old=btn.innerHTML; btn.innerHTML='Sending…';
+    try{
+      await api('/appointments',{method:'POST',body:JSON.stringify({client_name:nm,phone:ph,email:em,service:$('svc').value,notes:($('msg2').value||'').trim()})});
+      showToast('✓ Request sent — we’ll reach out the same day!');
+      ef.reset();
+    }catch(err){showToast(err.message,true);}
+    finally{btn.innerHTML=old;}
+  });
 
   // reviews
   async function loadReviews(){

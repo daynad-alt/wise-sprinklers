@@ -36,7 +36,7 @@ const SCHEMA = [
      unit_price DOUBLE PRECISION NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS appointments (
      id SERIAL PRIMARY KEY, client_name TEXT NOT NULL, email TEXT, phone TEXT,
-     service TEXT, address TEXT, appt_date TEXT NOT NULL, appt_time TEXT NOT NULL,
+     service TEXT, address TEXT, appt_date TEXT, appt_time TEXT,
      status TEXT NOT NULL DEFAULT 'requested', notes TEXT,
      reminder_sent INT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
      UNIQUE(appt_date, appt_time))`,
@@ -209,12 +209,19 @@ async function seed(db) {
 }
 
 // Runs once per warm instance; idempotent + safe to retry.
+// idempotent migrations for tables that already exist in production
+const MIGRATIONS = [
+  `ALTER TABLE appointments ALTER COLUMN appt_date DROP NOT NULL`,
+  `ALTER TABLE appointments ALTER COLUMN appt_time DROP NOT NULL`,
+];
+
 function makeEnsureReady(db) {
   let promise = null;
   return function ensureReady() {
     if (!promise) {
       promise = (async () => {
         for (const stmt of SCHEMA) await db(stmt);
+        for (const stmt of MIGRATIONS) { try { await db(stmt); } catch (e) { /* already applied — ignore */ } }
         await seed(db); // seeds only tables that are still empty (per-table check)
       })().catch((e) => { promise = null; throw e; });
     }
@@ -256,26 +263,26 @@ async function sendBookingEmails(appt) {
   if (!t) return { sent: false, reason: 'email not configured' };
   const from = `"Wise Sprinklers & Lighting" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`;
   const notify = process.env.NOTIFY_EMAIL || 'nathan@wisesprinklers.com';
-  const when = `${appt.appt_date} at ${prettyTime(appt.appt_time)}`;
+  const when = (appt.appt_date && appt.appt_time) ? `${appt.appt_date} at ${prettyTime(appt.appt_time)}` : null;
   const custInner = `
     <h1 style="color:#37d45f;font-size:22px;margin:0 0 8px">Thanks, ${eesc(appt.client_name.split(' ')[0])}! 🌱</h1>
-    <p style="color:#cfd8d0;font-size:15px;line-height:1.6;margin:0 0 20px">We've received your request for a free estimate. A member of our team will reach out shortly to confirm your visit. Here's what we have:</p>
+    <p style="color:#cfd8d0;font-size:15px;line-height:1.6;margin:0 0 20px">We've received your request for a free estimate. A member of our team will reach out the same day to get you scheduled. Here's what we have:</p>
     <table style="width:100%;border-collapse:collapse">
-      ${detailRow('Service', appt.service || 'General')}${detailRow('Requested date', when)}
+      ${detailRow('Service', appt.service || 'General')}${when ? detailRow('Requested date', when) : ''}${appt.notes ? detailRow('Your note', appt.notes) : ''}
     </table>
-    <p style="color:#8ea79a;font-size:13px;margin-top:24px;line-height:1.6">Need to change something or reach us sooner? Just reply to this email or call <a href="tel:2819104283" style="color:#37d45f">281·910·4283</a>. We look forward to taking care of your yard.</p>`;
+    <p style="color:#8ea79a;font-size:13px;margin-top:24px;line-height:1.6">Need to reach us sooner? Just reply to this email or call <a href="tel:2819104283" style="color:#37d45f">281·910·4283</a>. We look forward to taking care of your yard.</p>`;
   const bizInner = `
-    <h1 style="color:#37d45f;font-size:21px;margin:0 0 8px">New booking request</h1>
-    <p style="color:#cfd8d0;font-size:14px;margin:0 0 18px">A customer just booked through the website.</p>
+    <h1 style="color:#37d45f;font-size:21px;margin:0 0 8px">New estimate request</h1>
+    <p style="color:#cfd8d0;font-size:14px;margin:0 0 18px">A customer just reached out through the website.</p>
     <table style="width:100%;border-collapse:collapse">
       ${detailRow('Name', appt.client_name)}${detailRow('Service', appt.service || '—')}
-      ${detailRow('Date / time', when)}${detailRow('Phone', appt.phone || '—')}
-      ${detailRow('Email', appt.email || '—')}${appt.notes ? detailRow('Notes', appt.notes) : ''}
+      ${detailRow('Phone', appt.phone || '—')}${detailRow('Email', appt.email || '—')}
+      ${when ? detailRow('Requested date', when) : ''}${appt.notes ? detailRow('Additional info', appt.notes) : ''}
     </table>
     <p style="color:#8ea79a;font-size:13px;margin-top:20px">Reply to this email to reach the customer directly.</p>`;
   const jobs = [];
   if (appt.email) jobs.push(t.sendMail({ from, to: appt.email, subject: 'We received your request — Wise Sprinklers & Lighting', html: emailShell(custInner) }));
-  jobs.push(t.sendMail({ from, to: notify, replyTo: appt.email || undefined, subject: `New booking: ${appt.client_name} — ${when}`, html: emailShell(bizInner) }));
+  jobs.push(t.sendMail({ from, to: notify, replyTo: appt.email || undefined, subject: `New estimate request: ${appt.client_name}${appt.service ? ' — ' + appt.service : ''}`, html: emailShell(bizInner) }));
   const results = await Promise.allSettled(jobs);
   const failed = results.filter((r) => r.status === 'rejected');
   return { sent: failed.length === 0, delivered: results.length - failed.length, failed: failed.length, error: failed[0]?.reason?.message };
@@ -523,14 +530,20 @@ function createApp(db) {
   // Public booking
   app.post('/appointments', wrap(async (req, res) => {
     const b = req.body;
-    if (!b.client_name || !b.appt_date || !b.appt_time) return res.status(400).json({ error: 'client_name, appt_date and appt_time are required' });
-    if (!BOOKING.slots.includes(b.appt_time)) return res.status(400).json({ error: 'invalid time slot' });
-    const taken = await one(`SELECT 1 FROM appointments WHERE appt_date=$1 AND appt_time=$2 AND status<>'cancelled'`, [b.appt_date, b.appt_time]);
-    if (taken) return res.status(409).json({ error: 'That time slot is already booked' });
+    if (!b.client_name) return res.status(400).json({ error: 'client_name is required' });
+    // Scheduling is optional: the public form collects contact info + service + notes only.
+    // A specific date/time is validated (and de-duped) only when the admin supplies one.
+    if (b.appt_time) {
+      if (!BOOKING.slots.includes(b.appt_time)) return res.status(400).json({ error: 'invalid time slot' });
+      if (b.appt_date) {
+        const taken = await one(`SELECT 1 FROM appointments WHERE appt_date=$1 AND appt_time=$2 AND status<>'cancelled'`, [b.appt_date, b.appt_time]);
+        if (taken) return res.status(409).json({ error: 'That time slot is already booked' });
+      }
+    }
     const r = await one(
       `INSERT INTO appointments (client_name, email, phone, service, address, appt_date, appt_time, notes, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'requested') RETURNING *`,
-      [b.client_name, b.email ?? null, b.phone ?? null, b.service ?? null, b.address ?? null, b.appt_date, b.appt_time, b.notes ?? null]);
+      [b.client_name, b.email ?? null, b.phone ?? null, b.service ?? null, b.address ?? null, b.appt_date ?? null, b.appt_time ?? null, b.notes ?? null]);
     let email;
     try { email = await sendBookingEmails(r); } catch (e) { email = { sent: false, error: String(e && e.message) }; }
     res.status(201).json({ ...r, email });
