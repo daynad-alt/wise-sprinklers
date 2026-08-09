@@ -544,9 +544,11 @@ function createApp(db) {
       `INSERT INTO appointments (client_name, email, phone, service, address, appt_date, appt_time, notes, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'requested') RETURNING *`,
       [b.client_name, b.email ?? null, b.phone ?? null, b.service ?? null, b.address ?? null, b.appt_date ?? null, b.appt_time ?? null, b.notes ?? null]);
-    let email;
-    try { email = await sendBookingEmails(r); } catch (e) { email = { sent: false, error: String(e && e.message) }; }
-    res.status(201).json({ ...r, email });
+    let emailStatus;
+    try { emailStatus = await sendBookingEmails(r); } catch (e) { emailStatus = { sent: false, error: String(e && e.message) }; }
+    // Keyed separately: the row already has an `email` column (the customer's
+    // address), and spreading the send result over it would shadow the value.
+    res.status(201).json({ ...r, email_status: emailStatus });
   }));
 
   app.get('/appointments', wrap(async (req, res) => {
