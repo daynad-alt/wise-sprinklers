@@ -299,7 +299,7 @@ function createApp(db) {
   app.use((req, res, next) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Token');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });
@@ -307,6 +307,34 @@ function createApp(db) {
   app.use((req, _res, next) => {
     req.url = req.url.replace(/^\/\.netlify\/functions\/api/, '').replace(/^\/api/, '') || '/';
     if (req.url === '') req.url = '/';
+    next();
+  });
+
+  /* ---------- auth ----------
+   * Default deny: anything not on PUBLIC below needs the X-Admin-Token header
+   * matching ADMIN_TOKEN. Fails closed — if ADMIN_TOKEN is unset, every admin
+   * route is refused rather than left open.
+   * PUBLIC is only what the marketing site and invoice portal actually call.
+   */
+  const PUBLIC = [
+    ['GET', /^\/$/], ['GET', /^\/health$/],
+    ['GET', /^\/services$/], ['GET', /^\/reviews$/], ['GET', /^\/content$/],
+    ['GET', /^\/media\/[^/]+$/], ['GET', /^\/availability$/],
+    ['POST', /^\/appointments$/],          // the booking form
+    ['GET', /^\/portal$/],                 // customer invoice portal
+    ['GET', /^\/invoices\/\d+$/],          // portal opens one invoice
+  ];
+  const timingSafeEqual = (a, b) => {
+    const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+    return x.length === y.length && require('crypto').timingSafeEqual(x, y);
+  };
+  app.use((req, res, next) => {
+    const path = req.url.split('?')[0];
+    if (PUBLIC.some(([m, re]) => m === req.method && re.test(path))) return next();
+    const expected = process.env.ADMIN_TOKEN;
+    if (!expected) return res.status(503).json({ error: 'Admin API is not configured (ADMIN_TOKEN unset)' });
+    const got = req.get('X-Admin-Token') || '';
+    if (!got || !timingSafeEqual(got, expected)) return res.status(401).json({ error: 'Unauthorized' });
     next();
   });
 

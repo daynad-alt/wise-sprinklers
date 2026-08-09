@@ -143,8 +143,24 @@ function toast(msg, err) {
   const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
   setTimeout(() => (t.className = ''), 2600);
 }
+function adminToken() {
+  let t = localStorage.getItem('wise_admin_token');
+  if (!t) {
+    t = window.prompt('Dashboard password:') || '';
+    if (t) localStorage.setItem('wise_admin_token', t);
+  }
+  return t;
+}
 async function api(path, opts) {
-  const r = await fetch(API + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const o = opts || {};
+  const r = await fetch(API + path, {
+    ...o,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken(), ...(o.headers || {}) },
+  });
+  if (r.status === 401) {
+    localStorage.removeItem('wise_admin_token');   // wrong password: forget it so the next call re-prompts
+    throw new Error('Wrong dashboard password — reload and try again.');
+  }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
   return data;
