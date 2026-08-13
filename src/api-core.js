@@ -316,7 +316,11 @@ async function sendBookingEmails(appt) {
     </table>
     <p style="color:#8ea79a;font-size:13px;margin-top:20px">Reply to this email to reach the customer directly.</p>`;
   const jobs = [];
-  if (appt.email) jobs.push(t.sendMail({ from, to: appt.email, subject: 'We received your request — Wise Sprinklers & Lighting', html: emailShell(custInner) }));
+  // When sending through a mailbox that isn't the company address (e.g. Gmail
+  // SMTP, which rewrites From to the authenticated account), replies still need
+  // to reach the business rather than the sending account.
+  const replyTo = process.env.REPLY_TO || 'nathan@wisesprinklers.com';
+  if (appt.email) jobs.push(t.sendMail({ from, replyTo, to: appt.email, subject: 'We received your request — Wise Sprinklers & Lighting', html: emailShell(custInner) }));
   jobs.push(t.sendMail({ from, to: notify, replyTo: appt.email || undefined, subject: `New estimate request: ${appt.client_name}${appt.service ? ' — ' + appt.service : ''}`, html: emailShell(bizInner) }));
   const results = await Promise.allSettled(jobs);
   const failed = results.filter((r) => r.status === 'rejected');
