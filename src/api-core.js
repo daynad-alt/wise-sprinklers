@@ -61,6 +61,13 @@ const SCHEMA = [
      id SERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT,
      password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin',
      created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login TIMESTAMPTZ)`,
+  `CREATE TABLE IF NOT EXISTS google_reviews (
+     id TEXT PRIMARY KEY, author TEXT, photo_uri TEXT, rating INT,
+     body TEXT, relative_time TEXT, published_at TIMESTAMPTZ,
+     fetched_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS google_place_meta (
+     id INT PRIMARY KEY DEFAULT 1, rating DOUBLE PRECISION, review_count INT,
+     fetched_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
 ];
 
 // Business availability config for booking.
@@ -326,6 +333,42 @@ function readSessionToken(token) {
   return d;
 }
 
+
+/* ---------- Google reviews ----------
+ * Places API (New). Google returns at most 5 reviews and its terms do not
+ * allow keeping review text indefinitely, so rows are a refreshed cache with
+ * fetched_at, not an archive. Without the env vars this is inert and the site
+ * falls back to the manually curated reviews table.
+ */
+const GOOGLE_TTL_MS = 6 * 60 * 60 * 1000;   // refresh at most every 6h
+
+async function fetchGooglePlace() {
+  const key = process.env.GOOGLE_PLACES_API_KEY, place = process.env.GOOGLE_PLACE_ID;
+  if (!key || !place) return { ok: false, reason: 'google reviews not configured' };
+  const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(place)}`;
+  const r = await fetch(url, {
+    headers: {
+      'X-Goog-Api-Key': key,
+      'X-Goog-FieldMask': 'rating,userRatingCount,reviews',
+    },
+  });
+  if (!r.ok) {
+    const detail = await r.text().catch(() => '');
+    return { ok: false, reason: `google returned ${r.status}`, detail: detail.slice(0, 300) };
+  }
+  const d = await r.json();
+  const reviews = (d.reviews || []).map((v) => ({
+    id: v.name || `${v.authorAttribution?.displayName}|${v.publishTime}`,
+    author: v.authorAttribution?.displayName ?? null,
+    photo_uri: v.authorAttribution?.photoUri ?? null,
+    rating: Number(v.rating) || null,
+    body: v.text?.text ?? v.originalText?.text ?? null,
+    relative_time: v.relativePublishTimeDescription ?? null,
+    published_at: v.publishTime ?? null,
+  }));
+  return { ok: true, rating: d.rating ?? null, review_count: d.userRatingCount ?? null, reviews };
+}
+
 const LOGO = 'https://wisesprinklers.netlify.app/api/media/logo.png';
 function emailShell(inner) {
   return `<div style="background:#0a1c12;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
@@ -417,6 +460,7 @@ function createApp(db) {
   const PUBLIC = [
     ['GET', /^\/$/], ['GET', /^\/health$/],
     ['GET', /^\/services$/], ['GET', /^\/reviews$/], ['GET', /^\/content$/],
+    ['GET', /^\/reviews\/google$/],
     ['GET', /^\/media\/[^/]+$/], ['GET', /^\/availability$/],
     ['POST', /^\/appointments$/],          // the booking form
     ['POST', /^\/auth\/login$/],           // handler checks the password itself
@@ -520,6 +564,64 @@ function createApp(db) {
     if (n && n.n <= 1) return res.status(409).json({ error: 'Cannot delete the last account' });
     const u = await one('DELETE FROM users WHERE id=$1 RETURNING id', [req.params.id]);
     u ? res.json({ deleted: true, id: u.id }) : notFound(res, 'User');
+  }));
+
+
+  /* ---------- google reviews ---------- */
+  async function cachedGoogle() {
+    const meta = await one('SELECT * FROM google_place_meta WHERE id=1');
+    const rows = await db('SELECT * FROM google_reviews ORDER BY published_at DESC NULLS LAST');
+    return { meta, rows };
+  }
+
+  // Refreshes from Google when the cache is stale. Never throws to the caller:
+  // a Google outage must not take the marketing site's review section down.
+  async function refreshGoogle(force) {
+    const meta = await one('SELECT * FROM google_place_meta WHERE id=1');
+    const age = meta ? Date.now() - new Date(meta.fetched_at).getTime() : Infinity;
+    if (!force && age < GOOGLE_TTL_MS) return { refreshed: false, reason: 'cache is fresh' };
+    let g;
+    try { g = await fetchGooglePlace(); } catch (e) { return { refreshed: false, reason: String(e && e.message) }; }
+    if (!g.ok) return { refreshed: false, reason: g.reason, detail: g.detail };
+    for (const v of g.reviews) {
+      await db(
+        `INSERT INTO google_reviews (id, author, photo_uri, rating, body, relative_time, published_at, fetched_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7, now())
+         ON CONFLICT (id) DO UPDATE SET author=EXCLUDED.author, photo_uri=EXCLUDED.photo_uri,
+           rating=EXCLUDED.rating, body=EXCLUDED.body, relative_time=EXCLUDED.relative_time,
+           published_at=EXCLUDED.published_at, fetched_at=now()`,
+        [v.id, v.author, v.photo_uri, v.rating, v.body, v.relative_time, v.published_at]);
+    }
+    // Drop anything Google no longer returns, so the cache mirrors the live 5.
+    const keep = g.reviews.map((v) => v.id);
+    if (keep.length) {
+      await db(`DELETE FROM google_reviews WHERE NOT (id = ANY($1::text[]))`, [keep]);
+    }
+    await db(
+      `INSERT INTO google_place_meta (id, rating, review_count, fetched_at) VALUES (1,$1,$2, now())
+       ON CONFLICT (id) DO UPDATE SET rating=EXCLUDED.rating, review_count=EXCLUDED.review_count, fetched_at=now()`,
+      [g.rating, g.review_count]);
+    return { refreshed: true, count: g.reviews.length };
+  }
+
+  app.get('/reviews/google', wrap(async (req, res) => {
+    const status = await refreshGoogle(false);
+    const { meta, rows } = await cachedGoogle();
+    res.json({
+      configured: !!(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACE_ID),
+      rating: meta?.rating ?? null,
+      review_count: meta?.review_count ?? null,
+      fetched_at: meta?.fetched_at ?? null,
+      reviews: rows,
+      status,
+    });
+  }));
+
+  // Manual refresh from the dashboard, bypassing the TTL.
+  app.post('/reviews/google/refresh', wrap(async (_req, res) => {
+    const status = await refreshGoogle(true);
+    const { meta, rows } = await cachedGoogle();
+    res.json({ ...status, rating: meta?.rating ?? null, review_count: meta?.review_count ?? null, count: rows.length });
   }));
 
   /* clients */
@@ -675,7 +777,9 @@ function createApp(db) {
   // Reachable from the portal, but only for the invoice the token actually owns.
   // Admin callers (already past the middleware with a valid X-Admin-Token) skip the check.
   async function portalMayReadInvoice(req, invoiceId) {
-    if (isAdmin(req)) return true;   // must re-validate: these paths bypass the middleware
+    // These paths bypass the middleware, so staff access must be re-validated
+    // here: an admin token OR a signed dashboard session both count.
+    if (isAuthed(req)) return true;
     const email = readPortalToken(req.query.token);
     if (!email) return false;
     const owner = await one(
