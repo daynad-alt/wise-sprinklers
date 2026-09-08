@@ -57,6 +57,10 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS media (
      name TEXT PRIMARY KEY, content_type TEXT NOT NULL, data TEXT NOT NULL,
      created_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+  `CREATE TABLE IF NOT EXISTS users (
+     id SERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT,
+     password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'admin',
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_login TIMESTAMPTZ)`,
 ];
 
 // Business availability config for booking.
@@ -280,6 +284,48 @@ function portalBaseUrl(req) {
   return `https://${host}`;
 }
 
+
+/* ---------- user accounts ----------
+ * scrypt via node's crypto: no new dependency, and the salt+params travel
+ * with the hash so it can be tuned later without breaking existing rows.
+ * Session tokens reuse the same signed-token scheme as the customer portal,
+ * under a different label so the two can never be swapped for one another.
+ */
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;   // 12 hours
+
+function hashPassword(password) {
+  const crypto = require('crypto');
+  const salt = crypto.randomBytes(16).toString('hex');
+  const key = crypto.scryptSync(String(password), salt, 64).toString('hex');
+  return `scrypt$${salt}$${key}`;
+}
+function verifyPassword(password, stored) {
+  const crypto = require('crypto');
+  const [scheme, salt, key] = String(stored || '').split('$');
+  if (scheme !== 'scrypt' || !salt || !key) return false;
+  const got = crypto.scryptSync(String(password), salt, 64);
+  const want = Buffer.from(key, 'hex');
+  return got.length === want.length && crypto.timingSafeEqual(got, want);
+}
+const sessionSign = (payload) =>
+  b64u(require('crypto').createHmac('sha256', process.env.ADMIN_TOKEN || '').update('session.v1:' + payload).digest());
+function makeSessionToken(user) {
+  const payload = b64u(JSON.stringify({ u: user.id, e: user.email, r: user.role, x: Date.now() + SESSION_TTL_MS }));
+  return payload + '.' + sessionSign(payload);
+}
+// Returns the session claims, or null.
+function readSessionToken(token) {
+  if (!process.env.ADMIN_TOKEN || !token) return null;
+  const [payload, sig] = String(token).split('.');
+  if (!payload || !sig) return null;
+  const a = Buffer.from(sig), b = Buffer.from(sessionSign(payload));
+  if (a.length !== b.length || !require('crypto').timingSafeEqual(a, b)) return null;
+  let d;
+  try { d = JSON.parse(unb64u(payload)); } catch (e) { return null; }
+  if (!d || !d.u || !d.x || Date.now() > Number(d.x)) return null;
+  return d;
+}
+
 const LOGO = 'https://wisesprinklers.netlify.app/api/media/logo.png';
 function emailShell(inner) {
   return `<div style="background:#0a1c12;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">
@@ -373,6 +419,7 @@ function createApp(db) {
     ['GET', /^\/services$/], ['GET', /^\/reviews$/], ['GET', /^\/content$/],
     ['GET', /^\/media\/[^/]+$/], ['GET', /^\/availability$/],
     ['POST', /^\/appointments$/],          // the booking form
+    ['POST', /^\/auth\/login$/],           // handler checks the password itself
     // Portal routes are reachable without the admin token, but each handler
     // below requires a signed portal token instead. They are not open.
     ['POST', /^\/portal\/request$/],
@@ -392,13 +439,88 @@ function createApp(db) {
     const got = req.get('X-Admin-Token') || '';
     return !!expected && !!got && timingSafeEqual(got, expected);
   };
+  // A signed session from POST /auth/login. ADMIN_TOKEN still works on its own
+  // so a bad users table can never lock everyone out of the dashboard.
+  const bearer = (req) => (req.get('Authorization') || '').replace(/^Bearer\s+/i, '') || req.get('X-Session-Token') || '';
+  const sessionOf = (req) => readSessionToken(bearer(req));
+  const isAuthed = (req) => isAdmin(req) || !!sessionOf(req);
+
   app.use((req, res, next) => {
     const path = req.url.split('?')[0];
     if (PUBLIC.some(([m, re]) => m === req.method && re.test(path))) return next();
     if (!process.env.ADMIN_TOKEN) return res.status(503).json({ error: 'Admin API is not configured (ADMIN_TOKEN unset)' });
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+    if (!isAuthed(req)) return res.status(401).json({ error: 'Unauthorized' });
+    // Staff role sees the business, but may not alter the public site or delete records.
+    const s = sessionOf(req);
+    if (s && s.r === 'staff') {
+      const blocked = req.method === 'DELETE'
+        || (/^\/(content|services|media)/.test(path) && req.method !== 'GET');
+      if (blocked) return res.status(403).json({ error: 'Your account does not have permission for that' });
+    }
     next();
   });
+
+
+  /* ---------- accounts ---------- */
+  app.post('/auth/login', wrap(async (req, res) => {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
+    const u = await one('SELECT * FROM users WHERE lower(email)=lower($1)', [email]);
+    // Same reply either way: never reveal which accounts exist.
+    const deny = () => res.status(401).json({ error: 'Wrong email or password' });
+    if (!u || !verifyPassword(password, u.password_hash)) return deny();
+    await db('UPDATE users SET last_login = now() WHERE id=$1', [u.id]);
+    res.json({ token: makeSessionToken(u), user: { id: u.id, email: u.email, name: u.name, role: u.role },
+               expires_in: Math.floor(SESSION_TTL_MS / 1000) });
+  }));
+
+  app.get('/auth/me', wrap(async (req, res) => {
+    const s = sessionOf(req);
+    if (s) return res.json({ id: s.u, email: s.e, role: s.r, via: 'session' });
+    res.json({ via: 'admin-token', role: 'admin' });
+  }));
+
+  app.get('/users', wrap(async (_req, res) => {
+    res.json(await db('SELECT id, email, name, role, created_at, last_login FROM users ORDER BY id'));
+  }));
+
+  app.post('/users', wrap(async (req, res) => {
+    const b = req.body;
+    const email = String(b.email || '').trim().toLowerCase();
+    if (!email || !b.password) return res.status(400).json({ error: 'email and password are required' });
+    if (String(b.password).length < 10) return res.status(400).json({ error: 'password must be at least 10 characters' });
+    if (await one('SELECT 1 FROM users WHERE lower(email)=lower($1)', [email])) {
+      return res.status(409).json({ error: 'That email already has an account' });
+    }
+    const role = b.role === 'staff' ? 'staff' : 'admin';
+    const u = await one(
+      `INSERT INTO users (email, name, password_hash, role) VALUES ($1,$2,$3,$4)
+       RETURNING id, email, name, role, created_at`,
+      [email, b.name ?? null, hashPassword(b.password), role]);
+    res.status(201).json(u);
+  }));
+
+  app.patch('/users/:id/password', wrap(async (req, res) => {
+    if (!req.body.password || String(req.body.password).length < 10) {
+      return res.status(400).json({ error: 'password must be at least 10 characters' });
+    }
+    const s = sessionOf(req);
+    // A staff user may only change their own password.
+    if (s && s.r === 'staff' && String(s.u) !== String(req.params.id)) {
+      return res.status(403).json({ error: 'You can only change your own password' });
+    }
+    const u = await one('UPDATE users SET password_hash=$1 WHERE id=$2 RETURNING id, email, role',
+      [hashPassword(req.body.password), req.params.id]);
+    u ? res.json({ updated: true, id: u.id }) : notFound(res, 'User');
+  }));
+
+  app.delete('/users/:id', wrap(async (req, res) => {
+    const n = await one('SELECT COUNT(*)::int AS n FROM users');
+    if (n && n.n <= 1) return res.status(409).json({ error: 'Cannot delete the last account' });
+    const u = await one('DELETE FROM users WHERE id=$1 RETURNING id', [req.params.id]);
+    u ? res.json({ deleted: true, id: u.id }) : notFound(res, 'User');
+  }));
 
   /* clients */
   app.get('/clients', wrap(async (req, res) => {

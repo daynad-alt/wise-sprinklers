@@ -143,28 +143,66 @@ function toast(msg, err) {
   const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
   setTimeout(() => (t.className = ''), 2600);
 }
-function adminToken() {
-  let t = localStorage.getItem('wise_admin_token');
-  if (!t) {
-    t = window.prompt('Dashboard password:') || '';
-    if (t) localStorage.setItem('wise_admin_token', t);
+const SESSION_KEY = 'wise_session';
+let sessionToken = localStorage.getItem(SESSION_KEY) || '';
+
+function showLogin(message) {
+  sessionToken = '';
+  localStorage.removeItem(SESSION_KEY);
+  if (document.getElementById('loginOverlay')) {
+    if (message) document.getElementById('loginErr').textContent = message;
+    return;
   }
-  return t;
+  const el = document.createElement('div');
+  el.id = 'loginOverlay';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0a1c12;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif';
+  el.innerHTML = `
+    <form id="loginForm" style="background:#0e2618;padding:34px;border-radius:14px;width:min(360px,90vw);border:1px solid rgba(245,241,231,.16)">
+      <h2 style="color:#f5f1e7;margin:0 0 6px;font-size:1.15rem">Wise Sprinklers</h2>
+      <p style="color:#8ea79a;margin:0 0 20px;font-size:.85rem">Sign in to the dashboard</p>
+      <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" required
+        style="width:100%;padding:11px 13px;margin-bottom:10px;border-radius:9px;border:1px solid rgba(245,241,231,.2);background:rgba(10,28,18,.5);color:#f5f1e7;font-size:.95rem">
+      <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" required
+        style="width:100%;padding:11px 13px;margin-bottom:14px;border-radius:9px;border:1px solid rgba(245,241,231,.2);background:rgba(10,28,18,.5);color:#f5f1e7;font-size:.95rem">
+      <button type="submit" style="width:100%;padding:11px;border:0;border-radius:9px;background:#37d45f;color:#08160e;font-weight:700;font-size:.95rem;cursor:pointer">Sign in</button>
+      <p id="loginErr" style="color:#ef6a5a;font-size:.82rem;margin:12px 0 0;min-height:1em"></p>
+    </form>`;
+  document.body.appendChild(el);
+  if (message) document.getElementById('loginErr').textContent = message;
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('loginErr');
+    err.textContent = 'Signing in…';
+    try {
+      const r = await fetch(API + '/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value.trim(),
+          password: document.getElementById('loginPass').value,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { err.textContent = d.error || 'Sign in failed'; return; }
+      sessionToken = d.token;
+      localStorage.setItem(SESSION_KEY, d.token);
+      el.remove();
+      location.reload();
+    } catch (ex) { err.textContent = ex.message; }
+  });
 }
 async function api(path, opts) {
   const o = opts || {};
   const r = await fetch(API + path, {
     ...o,
-    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken(), ...(o.headers || {}) },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionToken, ...(o.headers || {}) },
   });
-  if (r.status === 401) {
-    localStorage.removeItem('wise_admin_token');   // wrong password: forget it so the next call re-prompts
-    throw new Error('Wrong dashboard password — reload and try again.');
-  }
+  if (r.status === 401) { showLogin('Session expired — sign in again.'); throw new Error('Not signed in'); }
+  if (r.status === 403) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Not permitted'); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
   return data;
 }
+if (!sessionToken) showLogin();
 
 /* ---------- load ---------- */
 async function loadAll() {
