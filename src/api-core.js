@@ -609,6 +609,7 @@ function createApp(db) {
     const { meta, rows } = await cachedGoogle();
     res.json({
       configured: !!(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACE_ID),
+      place_id: process.env.GOOGLE_PLACE_ID || null,
       rating: meta?.rating ?? null,
       review_count: meta?.review_count ?? null,
       fetched_at: meta?.fetched_at ?? null,

@@ -425,7 +425,21 @@ footer a:hover{color:var(--emerald-bright)}
 .rv-form input,.rv-form select,.rv-form textarea{background:var(--forest);color:var(--cream);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-family:"DM Sans";font-size:.92rem;cursor:none;width:100%}
 .rv-form textarea{grid-column:1/-1;min-height:64px}
 .rv-form button{grid-column:1/-1;padding:13px;border:none;border-radius:10px;background:var(--emerald-bright);color:var(--forest);font-weight:700;font-family:"Bricolage Grotesque";cursor:none}
-@media(max-width:820px){.book-grid,.rv-grid,.rv-form{grid-template-columns:1fr}}
+.rvg{margin-bottom:44px}
+.rvg-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.rvg-score{font-family:"Bricolage Grotesque";font-weight:800;font-size:2.1rem;line-height:1}
+.rvg-meta{color:var(--cream-faint);font-size:.88rem;margin-top:3px}
+.rvg-link{margin-left:auto;color:var(--emerald-bright);font-weight:700;font-size:.9rem;text-decoration:none;cursor:none}
+.rvg-link:hover{text-decoration:underline}
+.rvg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.rvg-card{position:relative}
+.rvg-card .rvg-g{position:absolute;top:22px;right:22px;width:17px;height:17px}
+.rvg-who{display:flex;align-items:center;gap:10px;margin-top:16px}
+.rvg-av{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--forest);flex:none}
+.rvg-name{font-weight:700;font-size:.9rem}
+.rvg-when{color:var(--cream-faint);font-weight:500;font-size:.8rem}
+.rv-sub{font-size:1rem;font-weight:700;color:var(--cream-dim);margin-bottom:18px}
+@media(max-width:820px){.book-grid,.rv-grid,.rvg-grid,.rv-form{grid-template-columns:1fr}}
 </style>
 
 <!-- BOOK -->
@@ -477,6 +491,18 @@ footer a:hover{color:var(--emerald-bright)}
     </div>
     <p class="muted" data-fade data-cms="reviews_intro" style="color:var(--cream-dim);max-width:32ch">Real feedback from Gulf Coast homes and businesses we've served.</p>
   </div>
+  <div class="rvg" id="rvGoogle" hidden>
+    <div class="rvg-head" data-fade>
+      <span class="rvg-score" id="rvgScore"></span>
+      <div>
+        <div class="rv-stars" id="rvgStars"></div>
+        <div class="rvg-meta" id="rvgCount"></div>
+      </div>
+      <a class="rvg-link" id="rvgLink" target="_blank" rel="noopener noreferrer" data-cursor="open">See them all on Google ↗</a>
+    </div>
+    <div class="rvg-grid" id="rvgGrid"></div>
+  </div>
+  <h3 class="rv-sub" id="rvSub" hidden>More from our customers</h3>
   <div class="rv-grid" id="rvGrid"></div>
   <form class="rv-form" id="rvForm" data-fade>
     <h3>Leave a review</h3>
@@ -690,14 +716,42 @@ if(matchMedia('(prefers-reduced-motion:reduce)').matches){gsap.globalTimeline.ti
   });
 
   // reviews
+  const stars=n=>{const k=Math.max(0,Math.min(5,Math.round(n||0)));return '★'.repeat(k)+'☆'.repeat(5-k);};
   async function loadReviews(){
-    const g=$('rvGrid'); if(!g)return;
+    const g=$('rvGrid'); if(!g)return 0;
     try{
       const rs=await api('/reviews?approved=true');
-      g.innerHTML=rs.slice(0,6).map(r=>`<div class="rv-card"><div class="rv-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div><p>${esc(r.body||'')}</p><div class="who">${esc(r.client_name)} ${r.service?`<span>· ${esc(r.service)}</span>`:''}</div></div>`).join('')||'<p style="color:var(--cream-faint)">No reviews yet.</p>';
-    }catch(e){g.innerHTML='<p style="color:#ef6a5a">Could not load reviews.</p>';}
+      g.innerHTML=rs.slice(0,6).map(r=>`<div class="rv-card"><div class="rv-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div><p>${esc(r.body||'')}</p><div class="who">${esc(r.client_name)} ${r.service?`<span>· ${esc(r.service)}</span>`:''}</div></div>`).join('');
+      return rs.length;
+    }catch(e){g.innerHTML='<p style="color:#ef6a5a">Could not load reviews.</p>';return -1;}
   }
-  loadReviews();
+
+  // Google reviews — server-cached. The block stays hidden unless Google is
+  // configured and actually returned reviews, so an outage or a missing key
+  // just leaves the curated reviews standing on their own.
+  const G_MARK='<svg class="rvg-g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.8-.4-4H24v7.3h12.1c-.2 2-1.6 5-4.5 7l-.1.3 6.5 5 .5.1c4.2-3.8 6.6-9.5 6.6-15.7"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4c-1.8 1.3-4.3 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.1l-.3.1-6.7 5.2-.1.3C7.9 41 15.4 46 24 46"/><path fill="#FBBC05" d="M11.5 28.4c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4v-.3l-6.8-5.3-.2.1C2.9 17 2 20.4 2 24s.9 7 2.5 9.9z"/><path fill="#EA4335" d="M24 10.5c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 4.3 29.9 2 24 2 15.4 2 7.9 7 4.5 14.1l7 5.5c1.8-5.3 6.7-9.1 12.5-9.1"/></svg>';
+  async function loadGoogleReviews(){
+    const wrap=$('rvGoogle'); if(!wrap)return false;
+    let d; try{ d=await api('/reviews/google'); }catch(e){ return false; }
+    if(!d.configured||!Array.isArray(d.reviews)||!d.reviews.length) return false;
+    const count=d.review_count||d.reviews.length;
+    $('rvgScore').textContent=Number(d.rating||0).toFixed(1);
+    $('rvgStars').textContent=stars(d.rating);
+    $('rvgCount').textContent=`${count} Google review${count===1?'':'s'}`;
+    const link=$('rvgLink');
+    if(d.place_id) link.href='https://search.google.com/local/reviews?placeid='+encodeURIComponent(d.place_id);
+    else link.hidden=true;
+    $('rvgGrid').innerHTML=d.reviews.slice(0,6).map(r=>`<div class="rv-card rvg-card">${G_MARK}<div class="rv-stars">${stars(r.rating)}</div><p>${esc(r.body||'')}</p><div class="rvg-who">${r.photo_uri?`<img class="rvg-av" src="${esc(r.photo_uri)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`:''}<div><div class="rvg-name">${esc(r.author||'Google user')}</div><div class="rvg-when">${esc(r.relative_time||'')}</div></div></div></div>`).join('');
+    wrap.hidden=false;
+    return true;
+  }
+
+  (async function(){
+    const [curated,googleShown]=await Promise.all([loadReviews(),loadGoogleReviews()]);
+    const g=$('rvGrid');
+    if(googleShown){ if(curated>0) $('rvSub').hidden=false; }
+    else if(curated===0&&g) g.innerHTML='<p style="color:var(--cream-faint)">No reviews yet.</p>';
+  })();
   const rf=$('rvForm');
   if(rf) rf.addEventListener('submit',async e=>{
     e.preventDefault(); const msg=$('rvMsg');
