@@ -68,6 +68,14 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS google_place_meta (
      id INT PRIMARY KEY DEFAULT 1, rating DOUBLE PRECISION, review_count INT,
      fetched_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
+  // Wise Business Hub: one table for every hub card. `kind` picks the section:
+  // job | check | quote | task | note | change.
+  `CREATE TABLE IF NOT EXISTS hub_items (
+     id SERIAL PRIMARY KEY, kind TEXT NOT NULL, title TEXT NOT NULL, details TEXT,
+     day TEXT, time TEXT, customer TEXT, amount DOUBLE PRECISION, status TEXT,
+     assignee TEXT, follow_up TEXT, done INT NOT NULL DEFAULT 0, sort INT NOT NULL DEFAULT 0,
+     created_by TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`,
 ];
 
 // Business availability config for booking.
@@ -497,7 +505,8 @@ function createApp(db) {
     // Staff role sees the business, but may not alter the public site or delete records.
     const s = sessionOf(req);
     if (s && s.r === 'staff') {
-      const blocked = req.method === 'DELETE'
+      // Staff may remove their own hub cards (Nathan clears finished tasks).
+      const blocked = (req.method === 'DELETE' && !/^\/hub\//.test(path))
         || (/^\/(content|services|media)/.test(path) && req.method !== 'GET');
       if (blocked) return res.status(403).json({ error: 'Your account does not have permission for that' });
     }
@@ -564,6 +573,57 @@ function createApp(db) {
     if (n && n.n <= 1) return res.status(409).json({ error: 'Cannot delete the last account' });
     const u = await one('DELETE FROM users WHERE id=$1 RETURNING id', [req.params.id]);
     u ? res.json({ deleted: true, id: u.id }) : notFound(res, 'User');
+  }));
+
+
+  /* ---------- wise business hub ---------- */
+  const HUB_KINDS = ['job', 'check', 'quote', 'task', 'note', 'change'];
+  const HUB_FIELDS = ['title', 'details', 'day', 'time', 'customer', 'amount', 'status',
+                      'assignee', 'follow_up', 'done', 'sort'];
+  const hubClean = (b) => {
+    const out = {};
+    for (const f of HUB_FIELDS) if (f in b) out[f] = b[f] === '' ? null : b[f];
+    if ('done' in out) out.done = out.done ? 1 : 0;
+    if ('amount' in out && out.amount != null) out.amount = Number(out.amount) || 0;
+    if ('sort' in out) out.sort = Number(out.sort) || 0;
+    return out;
+  };
+
+  app.get('/hub/items', wrap(async (req, res) => {
+    const kind = req.query.kind;
+    if (kind && !HUB_KINDS.includes(kind)) return res.status(400).json({ error: 'unknown kind' });
+    res.json(kind
+      ? await db('SELECT * FROM hub_items WHERE kind=$1 ORDER BY done, sort, day NULLS LAST, time NULLS LAST, id', [kind])
+      : await db('SELECT * FROM hub_items ORDER BY kind, done, sort, day NULLS LAST, time NULLS LAST, id'));
+  }));
+
+  app.post('/hub/items', wrap(async (req, res) => {
+    const kind = req.body && req.body.kind;
+    if (!HUB_KINDS.includes(kind)) return res.status(400).json({ error: 'kind must be one of ' + HUB_KINDS.join(', ') });
+    const b = hubClean(req.body);
+    if (!b.title || !String(b.title).trim()) return res.status(400).json({ error: 'title is required' });
+    const s = sessionOf(req);
+    const cols = ['kind', ...Object.keys(b), 'created_by'];
+    const vals = [kind, ...Object.values(b), s ? s.e : 'admin'];
+    const row = await one(
+      `INSERT INTO hub_items (${cols.join(',')}) VALUES (${cols.map((_, i) => '$' + (i + 1)).join(',')}) RETURNING *`, vals);
+    res.status(201).json(row);
+  }));
+
+  app.patch('/hub/items/:id', wrap(async (req, res) => {
+    const b = hubClean(req.body || {});
+    const keys = Object.keys(b);
+    if (!keys.length) return res.status(400).json({ error: 'nothing to update' });
+    if ('title' in b && !String(b.title || '').trim()) return res.status(400).json({ error: 'title is required' });
+    const sets = keys.map((k, i) => `${k}=$${i + 1}`).join(', ');
+    const row = await one(`UPDATE hub_items SET ${sets}, updated_at=now() WHERE id=$${keys.length + 1} RETURNING *`,
+      [...Object.values(b), req.params.id]);
+    row ? res.json(row) : notFound(res, 'Hub item');
+  }));
+
+  app.delete('/hub/items/:id', wrap(async (req, res) => {
+    const row = await one('DELETE FROM hub_items WHERE id=$1 RETURNING id', [req.params.id]);
+    row ? res.json({ deleted: true, id: row.id }) : notFound(res, 'Hub item');
   }));
 
 

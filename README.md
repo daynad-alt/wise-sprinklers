@@ -77,3 +77,9 @@ wise-backend-netlify/
 └── netlify/functions/
     └── api.js                   # thin wrapper: Netlify DB (neon) → createApp(db)
 ```
+
+## Wise Business Hub
+
+Private planning page at **`/hub`** (served from `public/hub.html`). Sign in with a dashboard account; D and Nathan each get their own login (`POST /api/users`, role `staff` for Nathan). Sections: this week's jobs, tasks (D / Nathan), quotes & follow-ups, job checklists, marketing & Christmas lighting notes, schedule changes & open questions.
+
+Data lives in one table, `hub_items` (created automatically), through `GET|POST /api/hub/items` and `PATCH|DELETE /api/hub/items/:id`. All hub routes require a login; staff accounts may delete hub cards but still not other records.

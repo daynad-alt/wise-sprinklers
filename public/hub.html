@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Wise Business Hub</title>
+<style>
+:root{
+  --bg:#0a1c12; --panel:#0e2618; --panel-2:#123322; --green:#37d45f; --blue:#3fa9f5;
+  --cream:#f3efe4; --dim:rgba(243,239,228,.62); --faint:rgba(243,239,228,.4); --line:rgba(243,239,228,.12);
+  --amber:#f0b447; --red:#ef6a5a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--cream);font-family:system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.45;min-height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#070f0a;border-bottom:3px solid var(--blue);position:sticky;top:0;z-index:5}
+header .brand{display:flex;align-items:center;gap:10px;min-width:0}
+header img{height:40px;width:auto}
+header h1{font-size:1.05rem;font-weight:700;white-space:nowrap}
+header h1 span{color:var(--blue)}
+header .right{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--dim)}
+header a,header button.link{color:var(--green);background:none;border:0;font:inherit;cursor:pointer;text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.tab{flex:0 0 auto;padding:9px 14px;border-radius:20px;border:1px solid var(--line);color:var(--dim);cursor:pointer;font-weight:600;font-size:14px;background:none}
+.tab.active{background:var(--blue);color:#06121c;border-color:var(--blue)}
+.tab .n{margin-left:6px;font-size:12px;opacity:.75}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.panel h2{font-size:1rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2 small{font-weight:400;color:var(--faint);font-size:12px}
+form.add{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+form.add input,form.add select,form.add textarea{flex:1 1 140px;min-width:0;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--cream);font:inherit;font-size:14px}
+form.add textarea{flex-basis:100%;min-height:64px;resize:vertical}
+form.add .grow{flex:3 1 220px}
+.btn{background:var(--green);color:#08160e;border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:14px}
+.btn:hover{filter:brightness(1.1)}
+ul.items{list-style:none}
+ul.items li{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid rgba(243,239,228,.07)}
+ul.items li:first-child{border-top:0}
+ul.items li.done .t{text-decoration:line-through;color:var(--faint)}
+.chk{width:20px;height:20px;margin-top:2px;accent-color:var(--green);flex:0 0 auto;cursor:pointer}
+.body{flex:1;min-width:0}
+.t{font-weight:600;word-wrap:break-word}
+.meta{font-size:12.5px;color:var(--dim);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.d{font-size:13.5px;color:var(--dim);margin-top:4px;white-space:pre-wrap;word-wrap:break-word}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:capitalize;background:rgba(243,239,228,.1)}
+.pill.D{background:rgba(63,169,245,.18);color:var(--blue)}
+.pill.Nathan{background:rgba(55,212,95,.16);color:var(--green)}
+.pill.sent,.pill.waiting{background:rgba(240,180,71,.16);color:var(--amber)}
+.pill.won{background:rgba(55,212,95,.16);color:var(--green)}
+.pill.lost{background:rgba(239,106,90,.18);color:var(--red)}
+.pill.due{background:rgba(239,106,90,.18);color:var(--red)}
+.x{background:none;border:0;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px}
+.x:hover{color:var(--red)}
+.empty{color:var(--faint);font-size:14px;padding:6px 0}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.daycol{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:120px}
+.daycol.today{border-color:var(--blue)}
+.daycol h3{font-size:13px;color:var(--dim);margin-bottom:6px;font-weight:600}
+.daycol.today h3{color:var(--blue)}
+.daycol ul.items li{padding:6px 0}
+.daycol .t{font-size:13.5px;hyphens:auto}
+.daycol ul.items li{gap:6px}
+.daycol .chk{width:16px;height:16px}
+.daycol .x{padding:0 2px}
+@media(max-width:600px){#who{display:none}header img{height:32px}}
+.weeknav{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.weeknav button{background:var(--panel-2);border:1px solid var(--line);color:var(--cream);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+.weeknav b{flex:1;text-align:center}
+@media(max-width:860px){.week{grid-template-columns:1fr}.daycol{min-height:0}}
+.group{margin-top:10px}
+.group h3{font-size:14px;color:var(--blue);margin-bottom:2px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#123322;border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;font-size:14px}
+#toast.show{opacity:1}#toast.err{border-color:var(--red);color:var(--red)}
+#login{position:fixed;inset:0;z-index:20;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
+#login form{background:var(--panel);padding:30px;border-radius:14px;width:min(360px,100%);border:1px solid var(--line);border-top:3px solid var(--blue)}
+#login img{height:56px;display:block;margin-bottom:10px}
+#login input{width:100%;padding:11px 13px;margin-bottom:10px;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--cream);font:inherit}
+#login .btn{width:100%;padding:11px}
+#loginErr{color:var(--red);font-size:13px;min-height:1em;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="login">
+  <form id="loginForm">
+    <img src="/api/media/logo.png" alt="" onerror="this.remove()" />
+    <h2 style="font-size:1.15rem">Wise Business Hub</h2>
+    <p style="color:var(--dim);font-size:13px;margin:4px 0 18px">Sign in with your dashboard account</p>
+    <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" required />
+    <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password" required />
+    <button class="btn" type="submit">Sign in</button>
+    <p id="loginErr"></p>
+  </form>
+</div>
+
+<header>
+  <div class="brand">
+    <img src="/api/media/logo.png" alt="Wise Sprinklers &amp; Lighting" onerror="this.remove()" />
+    <h1>Wise <span>Business Hub</span></h1>
+  </div>
+  <div class="right">
+    <span id="who"></span>
+    <a href="/admin.html">Dashboard</a>
+    <button class="link" id="logout">Sign out</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs"></nav>
+  <main id="view"></main>
+</div>
+<div id="toast"></div>
+
+<script>
+const API = '/api';
+const SESSION_KEY = 'wise_session';           // shared with the admin dashboard
+let token = localStorage.getItem(SESSION_KEY) || '';
+const PEOPLE = ['D', 'Nathan'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const TABS = [
+  { key: 'job',    label: 'This week' },
+  { key: 'task',   label: 'Tasks' },
+  { key: 'quote',  label: 'Quotes & follow-ups' },
+  { key: 'check',  label: 'Job checklists' },
+  { key: 'note',   label: 'Marketing & Christmas' },
+  { key: 'change', label: 'Changes & questions' },
+];
+let state = { tab: localTab(), items: [], weekOffset: 0 };
+
+function localTab() { try { return localStorage.getItem('hub_tab') || 'job'; } catch (e) { return 'job'; } }
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n) => n == null ? '' : '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const todayIso = () => iso(new Date());
+
+function toast(msg, err) { const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : ''); setTimeout(() => (t.className = ''), 2400); }
+
+function showLogin(msg) {
+  token = ''; try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  $('login').style.display = 'flex';
+  $('loginErr').textContent = msg || '';
+}
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginErr').textContent = 'Signing in…';
+  try {
+    const r = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('loginEmail').value.trim(), password: $('loginPass').value }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $('loginErr').textContent = d.error || 'Sign in failed'; return; }
+    token = d.token; localStorage.setItem(SESSION_KEY, token);
+    $('login').style.display = 'none';
+    start();
+  } catch (ex) { $('loginErr').textContent = ex.message; }
+});
+$('logout').onclick = () => showLogin();
+
+async function api(path, opts) {
+  const o = opts || {};
+  const r = await fetch(API + path, { ...o, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token } });
+  if (r.status === 401) { showLogin('Please sign in again.'); throw new Error('Not signed in'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+  return d;
+}
+
+async function load() { state.items = await api('/hub/items'); render(); }
+const of = (k) => state.items.filter((i) => i.kind === k);
+
+async function add(kind, data) {
+  try { const row = await api('/hub/items', { method: 'POST', body: JSON.stringify({ kind, ...data }) }); state.items.push(row); render(); }
+  catch (e) { toast(e.message, true); }
+}
+async function patch(id, data) {
+  try { const row = await api('/hub/items/' + id, { method: 'PATCH', body: JSON.stringify(data) });
+    state.items = state.items.map((i) => (i.id === row.id ? row : i)); render(); }
+  catch (e) { toast(e.message, true); }
+}
+async function remove(id) {
+  try { await api('/hub/items/' + id, { method: 'DELETE' }); state.items = state.items.filter((i) => i.id !== id); render(); }
+  catch (e) { toast(e.message, true); }
+}
+// Delete is two taps (× then "Delete?") instead of a browser dialog.
+let armed = null;
+
+function formData(form) { const o = {}; new FormData(form).forEach((v, k) => { o[k] = String(v).trim(); }); return o; }
+
+/* ---------- rendering ---------- */
+function renderTabs() {
+  $('tabs').innerHTML = TABS.map((t) => {
+    const open = of(t.key).filter((i) => !i.done).length;
+    return `<button class="tab ${state.tab === t.key ? 'active' : ''}" data-tab="${t.key}">${esc(t.label)}${open ? `<span class="n">${open}</span>` : ''}</button>`;
+  }).join('');
+  $('tabs').querySelectorAll('.tab').forEach((b) => b.onclick = () => { state.tab = b.dataset.tab; try { localStorage.setItem('hub_tab', state.tab); } catch (e) {} render(); });
+}
+
+function itemRow(i, extra) {
+  return `<li class="${i.done ? 'done' : ''}" data-id="${i.id}">
+    <input type="checkbox" class="chk" ${i.done ? 'checked' : ''} aria-label="Done" />
+    <div class="body"><div class="t">${esc(i.title)}</div>${extra || ''}${i.details ? `<div class="d">${esc(i.details)}</div>` : ''}</div>
+    <button class="x" title="Delete" aria-label="Delete">×</button></li>`;
+}
+function bindRows(root) {
+  root.querySelectorAll('li[data-id]').forEach((li) => {
+    const id = Number(li.dataset.id);
+    li.querySelector('.chk').onchange = (e) => patch(id, { done: e.target.checked });
+    const x = li.querySelector('.x');
+    x.onclick = () => {
+      if (armed === id) { armed = null; remove(id); return; }
+      armed = id; x.textContent = 'Delete?'; x.style.fontSize = '12px'; x.style.color = 'var(--red)';
+      setTimeout(() => { if (armed === id) { armed = null; x.textContent = '×'; x.style.fontSize = ''; x.style.color = ''; } }, 3000);
+    };
+  });
+}
+function list(items, extra) {
+  return items.length ? `<ul class="items">${items.map((i) => itemRow(i, extra && extra(i))).join('')}</ul>` : '<p class="empty">Nothing here yet.</p>';
+}
+const personOpts = (sel) => `<option value="">Anyone</option>` + PEOPLE.map((p) => `<option ${sel === p ? 'selected' : ''}>${p}</option>`).join('');
+
+function weekStart(offset) {
+  const d = new Date(); const dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow + offset * 7); d.setHours(0, 0, 0, 0); return d;
+}
+
+const VIEWS = {
+  job() {
+    const start = weekStart(state.weekOffset);
+    const days = DAYS.map((name, n) => { const d = new Date(start); d.setDate(start.getDate() + n); return { name, iso: iso(d), d }; });
+    const jobs = of('job');
+    const label = days[0].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' to ' + days[6].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const unscheduled = jobs.filter((j) => !j.day && !j.done);
+    return `
+      <div class="panel"><h2>Add a job</h2>
+        <form class="add" data-kind="job">
+          <input name="title" class="grow" placeholder="Job, e.g. Sprinkler repair at Smith's" required />
+          <input name="day" type="date" value="${todayIso() >= days[0].iso && todayIso() <= days[6].iso ? todayIso() : days[0].iso}" />
+          <input name="time" type="time" />
+          <select name="assignee">${personOpts()}</select>
+          <input name="customer" placeholder="Customer / address" />
+          <button class="btn">Add</button>
+        </form></div>
+      <div class="weeknav"><button data-w="-1">‹ Prev</button><b>${label}</b><button data-w="0">Today</button><button data-w="1">Next ›</button></div>
+      <div class="week">${days.map((day) => {
+        const js = jobs.filter((j) => j.day === day.iso).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        return `<div class="daycol ${day.iso === todayIso() ? 'today' : ''}"><h3>${day.name} ${day.d.getDate()}</h3>
+          ${js.length ? `<ul class="items">${js.map((j) => itemRow(j, `<div class="meta">${j.time ? `<span>${esc(j.time)}</span>` : ''}${j.assignee ? `<span class="pill ${esc(j.assignee)}">${esc(j.assignee)}</span>` : ''}${j.customer ? `<span>${esc(j.customer)}</span>` : ''}</div>`)).join('')}</ul>` : '<p class="empty" style="font-size:12px">Open</p>'}
+        </div>`;
+      }).join('')}</div>
+      ${unscheduled.length ? `<div class="panel" style="margin-top:14px"><h2>Not scheduled yet</h2>${list(unscheduled)}</div>` : ''}`;
+  },
+  task() {
+    const items = of('task');
+    const forP = (p) => items.filter((i) => (p ? i.assignee === p : !PEOPLE.includes(i.assignee)));
+    return `<div class="panel"><h2>Add a task</h2>
+        <form class="add" data-kind="task">
+          <input name="title" class="grow" placeholder="What needs doing?" required />
+          <select name="assignee">${personOpts('D')}</select>
+          <input name="day" type="date" title="Due date" />
+          <button class="btn">Add</button>
+        </form></div>
+      ${[...PEOPLE, null].map((p) => {
+        const its = forP(p); if (!p && !its.length) return '';
+        return `<div class="panel"><h2>${p ? esc(p) : 'Anyone'} <small>${its.filter((i) => !i.done).length} open</small></h2>
+          ${list(its, (i) => i.day ? `<div class="meta"><span class="${!i.done && i.day < todayIso() ? 'pill due' : ''}">Due ${esc(i.day)}</span></div>` : '')}</div>`;
+      }).join('')}`;
+  },
+  quote() {
+    const items = of('quote');
+    const open = items.filter((i) => !i.done).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    return `<div class="panel"><h2>Add a quote</h2>
+        <form class="add" data-kind="quote">
+          <input name="customer" placeholder="Customer" required />
+          <input name="title" class="grow" placeholder="Work quoted, e.g. 12-zone install" required />
+          <input name="amount" type="number" step="0.01" min="0" placeholder="Amount $" />
+          <select name="status"><option>sent</option><option>waiting</option><option>won</option><option>lost</option></select>
+          <input name="follow_up" type="date" title="Next follow-up" />
+          <button class="btn">Add</button>
+        </form></div>
+      <div class="panel"><h2>Quotes <small>${money(open)} open</small></h2>
+        ${list(items, (i) => `<div class="meta">${i.customer ? `<b>${esc(i.customer)}</b>` : ''}${i.amount != null ? `<span>${money(i.amount)}</span>` : ''}
+          <select data-status="${i.id}" style="background:none;border:1px solid var(--line);color:var(--cream);border-radius:6px;font-size:12px">${['sent', 'waiting', 'won', 'lost'].map((s) => `<option ${i.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+          ${i.follow_up ? `<span class="${!i.done && i.follow_up <= todayIso() ? 'pill due' : ''}">Follow up ${esc(i.follow_up)}</span>` : ''}</div>`)}
+        <p class="empty" style="font-size:12px;margin-top:8px">Tick a quote when it's closed out.</p></div>`;
+  },
+  check() {
+    const items = of('check');
+    const groups = {};
+    items.forEach((i) => { const k = i.customer || 'General'; (groups[k] = groups[k] || []).push(i); });
+    return `<div class="panel"><h2>Add a checklist step</h2>
+        <form class="add" data-kind="check">
+          <input name="customer" placeholder="Job, e.g. Smith install" list="jobsList" required />
+          <datalist id="jobsList">${Object.keys(groups).map((g) => `<option value="${esc(g)}">`).join('')}</datalist>
+          <input name="title" class="grow" placeholder="Step, e.g. Call 811 for locates" required />
+          <button class="btn">Add</button>
+        </form></div>
+      <div class="panel"><h2>Checklists</h2>${Object.keys(groups).length ? Object.entries(groups).map(([g, its]) =>
+        `<div class="group"><h3>${esc(g)} <small style="color:var(--faint);font-weight:400">${its.filter((i) => i.done).length}/${its.length}</small></h3>${list(its)}</div>`).join('') : '<p class="empty">Nothing here yet.</p>'}</div>`;
+  },
+  note() {
+    const items = of('note');
+    const sections = ['Marketing', 'Christmas lighting'];
+    return `<div class="panel"><h2>Add a planning note</h2>
+        <form class="add" data-kind="note">
+          <select name="status">${sections.map((s) => `<option>${s}</option>`).join('')}</select>
+          <input name="title" class="grow" placeholder="Idea or to-do" required />
+          <textarea name="details" placeholder="Details (optional)"></textarea>
+          <button class="btn">Add</button>
+        </form></div>
+      ${sections.map((s) => `<div class="panel"><h2>${s}</h2>${list(items.filter((i) => (i.status || 'Marketing') === s))}</div>`).join('')}`;
+  },
+  change() {
+    const items = of('change');
+    return `<div class="panel"><h2>Add a schedule change or question</h2>
+        <form class="add" data-kind="change">
+          <select name="status"><option>Schedule change</option><option>Open question</option></select>
+          <input name="title" class="grow" placeholder="e.g. Move Friday's lighting install to Monday" required />
+          <select name="assignee">${personOpts()}</select>
+          <textarea name="details" placeholder="Details (optional)"></textarea>
+          <button class="btn">Add</button>
+        </form></div>
+      <div class="panel"><h2>Changes & questions <small>tick when resolved</small></h2>
+        ${list(items, (i) => `<div class="meta"><span class="pill">${esc(i.status || 'Schedule change')}</span>${i.assignee ? `<span class="pill ${esc(i.assignee)}">${esc(i.assignee)}</span>` : ''}</div>`)}</div>`;
+  },
+};
+
+function render() {
+  renderTabs();
+  const v = $('view');
+  v.innerHTML = VIEWS[state.tab]();
+  bindRows(v);
+  v.querySelectorAll('form.add').forEach((f) => f.onsubmit = async (e) => {
+    e.preventDefault();
+    const data = formData(f);
+    await add(f.dataset.kind, data);
+  });
+  v.querySelectorAll('[data-w]').forEach((b) => b.onclick = () => { const w = Number(b.dataset.w); state.weekOffset = w === 0 ? 0 : state.weekOffset + w; render(); });
+  v.querySelectorAll('[data-status]').forEach((s) => s.onchange = () => patch(Number(s.dataset.status), { status: s.value }));
+}
+
+async function start() {
+  try {
+    const me = await api('/auth/me');
+    $('who').textContent = me.email || '';
+    await load();
+  } catch (e) { if (e.message !== 'Not signed in') toast(e.message, true); }
+}
+if (!token) showLogin(); else start();
+</script>
+</body>
+</html>
