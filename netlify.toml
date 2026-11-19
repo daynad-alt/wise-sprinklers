@@ -14,3 +14,9 @@
   from = "/api/*"
   to   = "/.netlify/functions/api/:splat"
   status = 200
+
+# Friendly URL for the private Business Hub (login required; data is behind /api auth)
+[[redirects]]
+  from = "/hub"
+  to   = "/hub.html"
+  status = 200

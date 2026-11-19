@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="color-scheme" content="light" />
+<title>Wise Business Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --surface-2:#f8faf9; --ink:#0f1f17; --ink-2:#3b4a42; --muted:#6b7a72;
+  --line:#e3e8e5; --line-2:#eef1ef;
+  --green:#1f9d55; --green-ink:#167a42; --green-soft:#e6f5ec;
+  --blue:#1d6fd8; --blue-ink:#1559b0; --blue-soft:#e8f0fc;
+  --amber:#b7791f; --amber-soft:#fdf3e1; --red:#c53030; --red-soft:#fdecec;
+  --side:#0d2a1b; --side-ink:#dfe9e3; --side-muted:#8fa89a;
+  --radius:12px; --shadow:0 1px 2px rgba(15,31,23,.05),0 1px 3px rgba(15,31,23,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.dsp{font-family:"Bricolage Grotesque","DM Sans",sans-serif;letter-spacing:-.015em}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--blue)}
+svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:20px 14px}
+.side .brand{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:4px 8px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
+.side .brand img{width:100%;max-width:200px;height:auto;max-height:100px;object-fit:contain;object-position:left center}
+.side .brand .bt{font-family:"Bricolage Grotesque";font-weight:700;font-size:15px;line-height:1.15}
+.side .brand .bt small{display:block;font-family:"DM Sans";font-weight:500;font-size:11.5px;color:var(--side-muted);letter-spacing:.04em;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--side-ink);cursor:pointer;text-align:left;font-weight:500;font-size:14px}
+.nav button:hover{background:rgba(255,255,255,.06)}
+.nav button.active{background:rgba(255,255,255,.1);color:#fff}
+.nav button.active svg{color:#5fd38d}
+.nav .cnt{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.1);color:var(--side-ink);padding:1px 8px;border-radius:20px}
+.nav .sep{height:1px;background:rgba(255,255,255,.08);margin:10px 4px}
+.side .foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+.side .me{display:flex;align-items:center;gap:10px;padding:6px 8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1f9d55,#1d6fd8);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto}
+.side .me .who{min-width:0}
+.side .me .who b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side .me .who span{font-size:11.5px;color:var(--side-muted);text-transform:capitalize}
+.side .lnk{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:var(--side-muted);background:none;border:0;cursor:pointer;font-size:13px;text-decoration:none;text-align:left}
+.side .lnk:hover{color:#fff;background:rgba(255,255,255,.06)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 32px 18px;background:var(--surface);border-bottom:1px solid var(--line)}
+.top h1{font-size:24px;font-weight:700}
+.top p{color:var(--muted);font-size:13.5px;margin-top:2px}
+.content{padding:24px 32px 48px;max-width:1280px;width:100%}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;border-radius:9px;padding:9px 15px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn svg.i{width:16px;height:16px}
+.btn.primary{background:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-ink)}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink-2)}
+.btn.ghost:hover{border-color:#cdd5d0;background:var(--surface-2)}
+.btn.sm{padding:6px 11px;font-size:13px}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line-2)}
+.card-h h2{font-size:15.5px;font-weight:700}
+.card-h .sub{color:var(--muted);font-size:12.5px;font-weight:500}
+.card-b{padding:6px 18px 10px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:2fr 1fr}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.stat{padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.stat .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto}
+.stat .ic.g{background:var(--green-soft);color:var(--green-ink)} .stat .ic.b{background:var(--blue-soft);color:var(--blue-ink)}
+.stat .ic.a{background:var(--amber-soft);color:var(--amber)} .stat .ic.r{background:var(--red-soft);color:var(--red)}
+.stat .lbl{font-size:12.5px;color:var(--muted);font-weight:500}
+.stat .val{font-family:"Bricolage Grotesque";font-size:26px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+
+/* ---------- rows ---------- */
+.rows{list-style:none}
+.row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line-2)}
+.row:first-child{border-top:0}
+.row .body{flex:1;min-width:0}
+.row .t{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.row.done .t{color:var(--muted);text-decoration:line-through;text-decoration-color:#b9c4be}
+.row .meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:3px;color:var(--muted);font-size:12.5px}
+.row .meta .m{display:inline-flex;align-items:center;gap:5px}
+.row .meta svg.i{width:13px;height:13px}
+.row .d{color:var(--ink-2);font-size:13.5px;margin-top:5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.check{appearance:none;width:20px;height:20px;border:1.5px solid #b9c4be;border-radius:6px;margin-top:1px;cursor:pointer;flex:0 0 auto;display:grid;place-items:center;background:#fff;transition:all .15s}
+.check:hover{border-color:var(--green)}
+.check:checked{background:var(--green);border-color:var(--green)}
+.check:checked::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.del{background:none;border:0;color:#a3b0a9;cursor:pointer;border-radius:6px;padding:4px;display:grid;place-items:center;opacity:.0;transition:opacity .15s}
+.row:hover .del,.del.armed,.del:focus{opacity:1}
+.del:hover{color:var(--red);background:var(--red-soft)}
+.del.armed{color:#fff;background:var(--red);font-size:12px;font-weight:600;padding:4px 9px}
+@media(hover:none){.del{opacity:1}}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--line-2);color:var(--ink-2);white-space:nowrap}
+.badge.D{background:var(--blue-soft);color:var(--blue-ink)}
+.badge.Nathan{background:var(--green-soft);color:var(--green-ink)}
+.badge.sent{background:var(--blue-soft);color:var(--blue-ink)}
+.badge.waiting{background:var(--amber-soft);color:var(--amber)}
+.badge.won{background:var(--green-soft);color:var(--green-ink)}
+.badge.lost{background:var(--red-soft);color:var(--red)}
+.badge.due{background:var(--red-soft);color:var(--red)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:28px 12px;color:var(--muted);font-size:13.5px}
+.empty svg.i{width:28px;height:28px;color:#b9c4be;margin-bottom:4px}
+
+/* ---------- week ---------- */
+.weekbar{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.weekbar .lbl{font-family:"Bricolage Grotesque";font-weight:700;font-size:17px;margin-right:auto}
+.iconbtn{width:36px;height:36px;display:grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink-2)}
+.iconbtn:hover{background:var(--surface-2)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-height:220px;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.day .dh{display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line-2)}
+.day .dh b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.day .dh span{font-family:"Bricolage Grotesque";font-weight:700;font-size:18px}
+.day.today{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+.day.today .dh b,.day.today .dh span{color:var(--blue-ink)}
+.day .jobs{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1}
+.job{position:relative;border:1px solid var(--line);border-left:3px solid var(--green);border-radius:8px;padding:8px 9px 8px 10px;background:var(--surface-2)}
+.job.a-D{border-left-color:var(--blue)}
+.job.done{opacity:.55}.job.done .jt{text-decoration:line-through}
+.job .jtop{display:flex;gap:8px;align-items:flex-start}
+.job .check{width:16px;height:16px;border-radius:5px}
+.job .check:checked::after{width:4px;height:8px}
+.job .jt{font-weight:600;font-size:13px;line-height:1.3;overflow-wrap:anywhere;flex:1}
+.job .jm{font-size:12px;color:var(--muted);margin-top:4px;display:flex;flex-direction:column;gap:2px}
+.job .del{position:absolute;top:4px;right:4px;padding:2px}
+.day .add-day{margin:0 8px 8px;border:1px dashed var(--line);background:none;border-radius:8px;padding:6px;color:var(--muted);cursor:pointer;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:4px}
+.day .add-day:hover{border-color:var(--green);color:var(--green-ink);background:var(--green-soft)}
+.day .add-day svg.i{width:14px;height:14px}
+
+/* ---------- table ---------- */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.tbl td{padding:12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr:hover td{background:#fbfcfb}
+.tbl tr:hover .del{opacity:1}
+.tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.tbl tr.done td{color:var(--muted)}
+.tbl select.st{border:1px solid var(--line);border-radius:7px;padding:4px 8px;background:#fff;font-size:13px;cursor:pointer}
+
+.progress{height:6px;background:var(--line-2);border-radius:6px;overflow:hidden;margin-top:6px}
+.progress i{display:block;height:100%;background:var(--green);border-radius:6px}
+.seg{display:inline-flex;background:var(--line-2);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:7px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:30;background:rgba(15,31,23,.45);display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
+.modal.open{display:flex}
+.dialog{background:var(--surface);border-radius:16px;width:min(480px,100%);box-shadow:0 20px 50px rgba(0,0,0,.2);max-height:calc(100vh - 32px);overflow:auto}
+.dialog .dh{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line-2)}
+.dialog .dh h3{font-size:18px;font-weight:700}
+.dialog form{padding:18px 22px 22px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:14.5px;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.field textarea{min-height:80px;resize:vertical}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.err{color:var(--red);font-size:13px;min-height:1em}
+
+/* ---------- login ---------- */
+#login{position:fixed;inset:0;z-index:40;display:none;grid-template-columns:1fr 1fr;background:var(--surface)}
+#login .art{background:linear-gradient(160deg,#0d2a1b 0%,#123f29 55%,#14476e 100%);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between}
+#login .art img{height:120px;width:auto;max-width:100%;object-fit:contain;align-self:flex-start}
+#login .art h2{font-size:36px;font-weight:800;line-height:1.08;max-width:12ch}
+#login .art p{color:#bcd3c6;max-width:38ch;margin-top:12px}
+#login .art ul{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:22px;color:#dfe9e3;font-size:14px}
+#login .art li{display:flex;gap:10px;align-items:center}
+#login .art li svg.i{color:#5fd38d}
+#login .pane{display:flex;align-items:center;justify-content:center;padding:32px}
+#login .plogo{display:none}
+#login form{width:min(380px,100%);display:flex;flex-direction:column;gap:14px}
+#login form h1{font-size:26px;font-weight:700}
+#login form .lead{color:var(--muted);font-size:14px;margin-top:-8px}
+#login .btn.primary{justify-content:center;padding:11px}
+.linkbtn{background:none;border:0;color:var(--blue);cursor:pointer;font-weight:600;padding:0}
+.linkbtn:hover{text-decoration:underline}
+.hint{color:var(--muted);font-size:13px}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:all .2s;pointer-events:none;font-size:14px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#toast.err{background:var(--red)}
+
+/* ---------- mobile ---------- */
+.mobilebar{display:none}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:1fr}.week{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .mobilebar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--side);color:#fff;position:sticky;top:0;z-index:10}
+  .mobilebar img{height:48px;width:auto;max-width:45vw;object-fit:contain}
+  .mobilebar b{font-family:"Bricolage Grotesque";font-size:15px;flex:1}
+  .mobilebar button{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .mnav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);scrollbar-width:none;position:sticky;top:68px;z-index:9}
+  .mnav button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:6px 12px;font-weight:600;font-size:13px;color:var(--ink-2);cursor:pointer}
+  .mnav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .top{padding:16px}
+  .top h1{font-size:20px}
+  .top p{display:none}
+  .content{padding:16px 16px 40px}
+  .stats{gap:10px}.stat{padding:12px;gap:10px}.stat .ic{width:34px;height:34px}.stat .val{font-size:21px}
+  .g2{grid-template-columns:1fr}
+  .week{grid-template-columns:1fr}
+  .day{min-height:0}
+  .tbl thead{display:none}
+  .tbl tr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px;border-bottom:1px solid var(--line-2)}
+  .tbl td{padding:0;border:0}
+  .tbl td.c-amt{text-align:right}
+  .tbl td.c-del{grid-column:2;grid-row:1;justify-self:end}
+  .frow{grid-template-columns:1fr}
+  #login{grid-template-columns:1fr}
+  #login .art{display:none}
+  #login .plogo{display:block;height:96px;width:auto;max-width:100%;object-fit:contain;margin:0 0 24px;background:var(--side);padding:12px 16px;border-radius:14px}
+}
+@media(min-width:861px){.mnav{display:none}}
+</style>
+</head>
+<body>
+
+<!-- ============ sign in ============ -->
+<div id="login">
+  <div class="art">
+    <img src="/api/media/logo.png" alt="Wise Sprinklers &amp; Lighting" onerror="this.remove()" />
+    <div>
+      <h2>Wise Business Hub</h2>
+      <p>One place to run the week: jobs, quotes, tasks and the Christmas lighting season.</p>
+      <ul>
+        <li><svg class="i"><use href="#i-check"/></svg>Weekly job schedule</li>
+        <li><svg class="i"><use href="#i-check"/></svg>Quotes and follow-ups</li>
+        <li><svg class="i"><use href="#i-check"/></svg>Tasks for you and Nathan</li>
+      </ul>
+    </div>
+    <small style="color:#8fa89a">Private. Staff only.</small>
+  </div>
+  <div class="pane">
+    <div style="width:min(380px,100%)"><img class="plogo" src="/api/media/logo.png" alt="Wise Sprinklers &amp; Lighting" onerror="this.remove()" />
+    <form id="loginForm">
+      <h1>Sign in</h1>
+      <p class="lead">Use your Wise dashboard account.</p>
+      <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="username" required /></div>
+      <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required /></div>
+      <button class="btn primary" type="submit">Sign in</button>
+      <p class="err" id="loginErr"></p>
+      <p class="hint">No login yet? <button type="button" class="linkbtn" id="toSetup">Create an account</button></p>
+    </form>
+    <form id="setupForm" style="display:none">
+      <h1>Create your account</h1>
+      <p class="lead">Enter the setup key you saved in Netlify as <a href="https://app.netlify.com/projects/wisesprinklers/configuration/env" target="_blank" rel="noopener">HUB_SETUP_KEY</a>.</p>
+      <div class="field"><label for="setupName">Your name</label><input id="setupName" autocomplete="name" /></div>
+      <div class="field"><label for="setupEmail">Email</label><input id="setupEmail" type="email" autocomplete="username" required /></div>
+      <div class="field"><label for="setupPass">Password</label><input id="setupPass" type="password" minlength="10" placeholder="10+ characters" autocomplete="new-password" required /></div>
+      <div class="field"><label for="setupKey">Setup key</label><input id="setupKey" type="password" autocomplete="off" required /></div>
+      <button class="btn primary" type="submit">Create account and sign in</button>
+      <p class="err" id="setupErr"></p>
+      <p class="hint"><button type="button" class="linkbtn" id="toLogin">Back to sign in</button></p>
+    </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============ app ============ -->
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img src="/api/media/logo.png" alt="" onerror="this.remove()" />
+      <div class="bt">Wise Sprinklers<small>Business Hub</small></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">
+      <div class="me"><div class="avatar" id="avatar">W</div><div class="who"><b id="meName"></b><span id="meRole"></span></div></div>
+      <button class="lnk" id="addLogin" style="display:none"><svg class="i"><use href="#i-user-plus"/></svg>Add a login</button>
+      <a class="lnk" href="/admin.html"><svg class="i"><use href="#i-grid"/></svg>Admin dashboard</a>
+      <button class="lnk" id="logout"><svg class="i"><use href="#i-logout"/></svg>Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="mobilebar"><img src="/api/media/logo.png" alt="" onerror="this.remove()" /><b>Business Hub</b><button id="mLogout">Sign out</button></div>
+    <nav class="mnav" id="mnav"></nav>
+    <header class="top">
+      <div><h1 id="pageTitle"></h1><p id="pageSub"></p></div>
+      <div id="pageAction"></div>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+</div>
+
+<!-- ============ add item dialog ============ -->
+<div class="modal" id="modal">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="dh"><h3 id="mTitle"></h3><button class="iconbtn" id="mClose" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <form id="mForm"></form>
+  </div>
+</div>
+
+<!-- ============ add login dialog ============ -->
+<div class="modal" id="userModal">
+  <div class="dialog" role="dialog" aria-modal="true">
+    <div class="dh"><h3>Add a login</h3><button class="iconbtn" id="auClose" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <form id="addUserForm">
+      <p class="hint" style="margin-top:-4px">For Nathan or another helper. They can use the Hub and see the dashboard, but can't change the public website.</p>
+      <div class="field"><label for="auName">Name</label><input id="auName" placeholder="Nathan" /></div>
+      <div class="field"><label for="auEmail">Email</label><input id="auEmail" type="email" required /></div>
+      <div class="field"><label for="auPass">Temporary password</label><input id="auPass" type="text" minlength="10" placeholder="10+ characters" required /></div>
+      <p class="err" id="auErr"></p>
+      <div class="actions"><button type="button" class="btn ghost" id="auCancel">Cancel</button><button class="btn primary" type="submit">Add login</button></div>
+    </form>
+  </div>
+</div>
+<div id="toast"></div>
+
+<!-- ============ icons ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path d="m4 6.5 1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7h7.5M12.5 13h7.5M12.5 19h7.5"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 2.5v19M16.5 6.5c-.8-1.3-2.5-2-4.5-2-2.6 0-4.5 1.3-4.5 3.3 0 4.6 9.5 2.4 9.5 7.4 0 2-2 3.3-5 3.3-2.2 0-4-.8-5-2.3"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v2.5h8V3M8.5 11.5l2 2 4-4M8.5 17h7"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 13h11l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2.5 21a7.5 7.5 0 0 1 15 0M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v4.5M12 17.5v.5"/></symbol>
+</svg>
+
+<script>
+const API = '/api';
+const SESSION_KEY = 'wise_session';           // shared with the admin dashboard
+let token = ''; try { token = localStorage.getItem(SESSION_KEY) || ''; } catch (e) {}
+const PEOPLE = ['D', 'Nathan'];
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const QUOTE_STATUS = ['sent', 'waiting', 'won', 'lost'];
+const NOTE_SECTIONS = ['Marketing', 'Christmas lighting'];
+const CHANGE_TYPES = ['Schedule change', 'Open question'];
+
+const PAGES = [
+  { key: 'home',   label: 'Overview',            icon: 'home',   sub: 'Today at a glance' },
+  { key: 'job',    label: 'Schedule',            icon: 'cal',    sub: 'Jobs for the week', add: 'New job' },
+  { key: 'task',   label: 'Tasks',               icon: 'tasks',  sub: 'Who is doing what', add: 'New task' },
+  { key: 'quote',  label: 'Quotes',              icon: 'dollar', sub: 'Open quotes and follow-ups', add: 'New quote' },
+  { key: 'check',  label: 'Job checklists',      icon: 'list',   sub: 'Step-by-step for each job', add: 'New step' },
+  { key: 'note',   label: 'Marketing & holiday', icon: 'star',   sub: 'Marketing ideas and Christmas lighting plans', add: 'New note' },
+  { key: 'change', label: 'Changes & questions', icon: 'swap',   sub: 'Schedule changes and open questions', add: 'New item' },
+];
+let state = { page: savedPage(), items: [], weekOffset: 0, me: {} };
+
+function savedPage() { try { return localStorage.getItem('hub_page') || 'home'; } catch (e) { return 'home'; } }
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ic = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const todayIso = () => iso(new Date());
+const fromIso = (s) => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+const nice = (s) => s ? fromIso(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+const niceTime = (t) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); return ((h % 12) || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + (h < 12 ? ' am' : ' pm'); };
+
+function toast(msg, err) { const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : ''); clearTimeout(toast.h); toast.h = setTimeout(() => (t.className = ''), 2600); }
+
+/* ---------------- auth ---------------- */
+function showLogin(msg) {
+  token = ''; try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  $('login').style.display = 'grid';
+  $('loginErr').textContent = msg || '';
+}
+async function signIn(email, password) {
+  const l = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+  const d = await l.json().catch(() => ({}));
+  if (!l.ok) throw new Error(d.error || 'Sign in failed');
+  token = d.token; try { localStorage.setItem(SESSION_KEY, token); } catch (e) {}
+  $('login').style.display = 'none';
+  start();
+}
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginErr').textContent = 'Signing in…';
+  try { await signIn($('loginEmail').value.trim(), $('loginPass').value); } catch (ex) { $('loginErr').textContent = ex.message; }
+});
+$('logout').onclick = $('mLogout').onclick = () => showLogin();
+$('toSetup').onclick = () => { $('loginForm').style.display = 'none'; $('setupForm').style.display = 'flex'; };
+$('toLogin').onclick = () => { $('setupForm').style.display = 'none'; $('loginForm').style.display = 'flex'; };
+$('setupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('setupErr');
+  const email = $('setupEmail').value.trim(), password = $('setupPass').value;
+  if (password.length < 10) { err.textContent = 'Password needs at least 10 characters.'; return; }
+  err.textContent = 'Creating your account…';
+  try {
+    const r = await fetch(API + '/users', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Setup-Key': $('setupKey').value.trim() },
+      body: JSON.stringify({ name: $('setupName').value.trim() || null, email, password, role: 'admin' }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { err.textContent = "That setup key didn't match. Check it and try again."; return; }
+    if (r.status === 503) { err.textContent = 'The site has no setup key yet. Ask Claude to set it up.'; return; }
+    if (!r.ok && r.status !== 409) { err.textContent = d.error || 'Could not create the account'; return; }
+    try { await signIn(email, password); $('setupKey').value = ''; }
+    catch (ex) { err.textContent = r.status === 409 ? 'That email already has an account with a different password.' : ex.message; }
+  } catch (ex) { err.textContent = ex.message; }
+});
+
+/* add a login (admins) */
+const closeUser = () => $('userModal').classList.remove('open');
+$('addLogin').onclick = () => { $('userModal').classList.add('open'); $('auErr').textContent = ''; setTimeout(() => $('auName').focus(), 50); };
+$('auClose').onclick = $('auCancel').onclick = closeUser;
+$('addUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await api('/users', { method: 'POST', body: JSON.stringify({ name: $('auName').value.trim() || null,
+      email: $('auEmail').value.trim(), password: $('auPass').value, role: 'staff' }) });
+    closeUser(); $('addUserForm').reset();
+    toast('Login added. Send them the email and temporary password.');
+  } catch (ex) { $('auErr').textContent = ex.message; }
+});
+
+async function api(path, opts) {
+  const o = opts || {};
+  const r = await fetch(API + path, { ...o, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token } });
+  if (r.status === 401) { showLogin('Please sign in again.'); throw new Error('Not signed in'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+  return d;
+}
+
+/* ---------------- data ---------------- */
+async function load() { state.items = await api('/hub/items'); render(); }
+const of = (k) => state.items.filter((i) => i.kind === k);
+async function add(kind, data) {
+  const row = await api('/hub/items', { method: 'POST', body: JSON.stringify({ kind, ...data }) });
+  state.items.push(row); render(); toast('Saved');
+}
+async function patch(id, data) {
+  try { const row = await api('/hub/items/' + id, { method: 'PATCH', body: JSON.stringify(data) });
+    state.items = state.items.map((i) => (i.id === row.id ? row : i)); render(); }
+  catch (e) { toast(e.message, true); }
+}
+async function remove(id) {
+  try { await api('/hub/items/' + id, { method: 'DELETE' }); state.items = state.items.filter((i) => i.id !== id); render(); toast('Deleted'); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---------------- add dialog ---------------- */
+const opt = (list, sel) => list.map((v) => `<option ${v === sel ? 'selected' : ''}>${esc(v)}</option>`).join('');
+const personSel = (sel) => `<option value="">Anyone</option>` + opt(PEOPLE, sel);
+const F = {
+  text: (n, l, p, req) => `<div class="field"><label>${l}</label><input name="${n}" placeholder="${esc(p || '')}" ${req ? 'required' : ''} /></div>`,
+};
+const FORMS = {
+  job: (pre) => `${F.text('title', 'Job', 'e.g. Sprinkler repair', 1)}
+    <div class="frow"><div class="field"><label>Date</label><input type="date" name="day" value="${pre.day || todayIso()}" /></div>
+    <div class="field"><label>Time</label><input type="time" name="time" /></div></div>
+    <div class="frow">${F.text('customer', 'Customer / address', 'Smith, 412 Pine Dr')}
+    <div class="field"><label>Assigned to</label><select name="assignee">${personSel()}</select></div></div>
+    <div class="field"><label>Notes</label><textarea name="details" placeholder="Gate code, parts to bring…"></textarea></div>`,
+  task: () => `${F.text('title', 'Task', 'What needs doing?', 1)}
+    <div class="frow"><div class="field"><label>Assigned to</label><select name="assignee">${personSel(state.me.name === 'Nathan' ? 'Nathan' : 'D')}</select></div>
+    <div class="field"><label>Due date</label><input type="date" name="day" /></div></div>
+    <div class="field"><label>Notes</label><textarea name="details"></textarea></div>`,
+  quote: () => `<div class="frow">${F.text('customer', 'Customer', 'Customer name', 1)}
+    <div class="field"><label>Amount</label><input type="number" name="amount" step="0.01" min="0" placeholder="0.00" /></div></div>
+    ${F.text('title', 'Work quoted', 'e.g. 12-zone install', 1)}
+    <div class="frow"><div class="field"><label>Status</label><select name="status">${opt(QUOTE_STATUS)}</select></div>
+    <div class="field"><label>Next follow-up</label><input type="date" name="follow_up" /></div></div>
+    <div class="field"><label>Notes</label><textarea name="details"></textarea></div>`,
+  check: () => `<div class="field"><label>Job</label><input name="customer" list="jobsList" placeholder="e.g. Smith install" required />
+    <datalist id="jobsList">${[...new Set(of('check').map((i) => i.customer).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join('')}</datalist></div>
+    ${F.text('title', 'Step', 'e.g. Call 811 for locates', 1)}`,
+  note: () => `<div class="field"><label>Section</label><select name="status">${opt(NOTE_SECTIONS)}</select></div>
+    ${F.text('title', 'Idea or to-do', '', 1)}
+    <div class="field"><label>Details</label><textarea name="details"></textarea></div>`,
+  change: () => `<div class="frow"><div class="field"><label>Type</label><select name="status">${opt(CHANGE_TYPES)}</select></div>
+    <div class="field"><label>For</label><select name="assignee">${personSel()}</select></div></div>
+    ${F.text('title', 'What changed or what\'s the question?', '', 1)}
+    <div class="field"><label>Details</label><textarea name="details"></textarea></div>`,
+};
+function openAdd(kind, pre) {
+  const page = PAGES.find((p) => p.key === kind);
+  $('mTitle').textContent = page.add;
+  $('mForm').innerHTML = FORMS[kind](pre || {}) + `<p class="err" id="mErr"></p>
+    <div class="actions"><button type="button" class="btn ghost" id="mCancel">Cancel</button><button class="btn primary" type="submit">${ic('check')}Save</button></div>`;
+  $('mForm').dataset.kind = kind;
+  $('modal').classList.add('open');
+  $('mCancel').onclick = closeAdd;
+  setTimeout(() => { const f = $('mForm').querySelector('input:not([type=date]),select'); f && !$('mForm').contains(document.activeElement) && f.focus(); }, 50);
+}
+const closeAdd = () => $('modal').classList.remove('open');
+$('mClose').onclick = closeAdd;
+document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('open'); }));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach((m) => m.classList.remove('open')); });
+$('mForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const data = {}; new FormData($('mForm')).forEach((v, k) => { data[k] = String(v).trim(); });
+  try { await add($('mForm').dataset.kind, data); closeAdd(); } catch (ex) { $('mErr').textContent = ex.message; }
+});
+
+/* ---------------- shared pieces ---------------- */
+const delBtn = (id) => `<button class="del" data-del="${id}" title="Delete" aria-label="Delete">${ic('trash')}</button>`;
+const chk = (i) => `<input type="checkbox" class="check" data-done="${i.id}" ${i.done ? 'checked' : ''} aria-label="Mark done" />`;
+const person = (p) => p ? `<span class="badge ${esc(p)}">${esc(p)}</span>` : '';
+const empty = (icon, text) => `<div class="empty">${ic(icon)}<div>${text}</div></div>`;
+function row(i, meta) {
+  return `<li class="row ${i.done ? 'done' : ''}">${chk(i)}<div class="body"><div class="t">${esc(i.title)}</div>
+    ${meta ? `<div class="meta">${meta}</div>` : ''}${i.details ? `<div class="d">${esc(i.details)}</div>` : ''}</div>${delBtn(i.id)}</li>`;
+}
+const rows = (items, meta, emptyHtml) => items.length ? `<ul class="rows">${items.map((i) => row(i, meta && meta(i))).join('')}</ul>` : emptyHtml;
+const byDone = (a, b) => a.done - b.done || String(a.day || '9').localeCompare(String(b.day || '9')) || a.id - b.id;
+const overdue = (d) => d && d < todayIso();
+
+function weekDays(offset) {
+  const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - ((s.getDay() + 6) % 7) + offset * 7);
+  return DAYS.map((name, n) => { const d = new Date(s); d.setDate(s.getDate() + n); return { name, d, iso: iso(d) }; });
+}
+
+/* ---------------- pages ---------------- */
+const VIEWS = {
+  home() {
+    const t = todayIso(), week = weekDays(0);
+    const jobsWeek = of('job').filter((j) => j.day >= week[0].iso && j.day <= week[6].iso);
+    const today = of('job').filter((j) => j.day === t).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    const openTasks = of('task').filter((i) => !i.done).sort(byDone);
+    const openQuotes = of('quote').filter((i) => !i.done && i.status !== 'lost');
+    const due = openQuotes.filter((q) => q.follow_up && q.follow_up <= t);
+    const questions = of('change').filter((i) => !i.done);
+    return `
+      <div class="stats">
+        <div class="card stat"><div class="ic g">${ic('cal')}</div><div><div class="lbl">Jobs this week</div><div class="val">${jobsWeek.length}</div></div></div>
+        <div class="card stat"><div class="ic b">${ic('tasks')}</div><div><div class="lbl">Open tasks</div><div class="val">${openTasks.length}</div></div></div>
+        <div class="card stat"><div class="ic a">${ic('dollar')}</div><div><div class="lbl">Quotes open</div><div class="val">${money(openQuotes.reduce((s, q) => s + (Number(q.amount) || 0), 0))}</div></div></div>
+        <div class="card stat"><div class="ic r">${ic('bell')}</div><div><div class="lbl">Follow-ups due</div><div class="val">${due.length}</div></div></div>
+      </div>
+      <div class="grid g3">
+        <div class="grid">
+          <section class="card"><div class="card-h"><h2>Today's jobs</h2><span class="sub">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span></div>
+            <div class="card-b">${rows(today, (j) => [j.time && `<span class="m">${ic('clock')}${niceTime(j.time)}</span>`, j.customer && `<span class="m">${ic('pin')}${esc(j.customer)}</span>`, person(j.assignee)].filter(Boolean).join(''),
+              empty('cal', 'Nothing scheduled today.'))}</div></section>
+          <section class="card"><div class="card-h"><h2>Follow-ups due</h2><button class="btn ghost sm" data-go="quote">All quotes</button></div>
+            <div class="card-b">${rows(due, (q) => `<b>${esc(q.customer || '')}</b><span>${money(q.amount)}</span><span class="badge due">Due ${nice(q.follow_up)}</span>`, empty('check', 'No follow-ups due. Nice.'))}</div></section>
+        </div>
+        <div class="grid" style="align-content:start">
+          <section class="card"><div class="card-h"><h2>Open tasks</h2><button class="btn ghost sm" data-go="task">View all</button></div>
+            <div class="card-b">${rows(openTasks.slice(0, 6), (i) => [person(i.assignee), i.day && `<span class="${overdue(i.day) ? 'badge due' : 'm'}">${overdue(i.day) ? 'Overdue · ' : 'Due '}${nice(i.day)}</span>`].filter(Boolean).join(''), empty('tasks', 'All caught up.'))}</div></section>
+          ${questions.length ? `<section class="card"><div class="card-h"><h2>Changes & questions</h2><span class="sub">${questions.length} open</span></div>
+            <div class="card-b">${rows(questions.slice(0, 4), (i) => `<span class="badge">${esc(i.status || 'Schedule change')}</span>${person(i.assignee)}`)}</div></section>` : ''}
+        </div>
+      </div>`;
+  },
+  job() {
+    const days = weekDays(state.weekOffset), t = todayIso();
+    const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const jobs = of('job');
+    const unsched = jobs.filter((j) => !j.day && !j.done);
+    return `
+      <div class="weekbar"><span class="lbl">${fmt(days[0].d)} – ${fmt(days[6].d)}, ${days[6].d.getFullYear()}</span>
+        <button class="iconbtn" data-w="-1" aria-label="Previous week">${ic('left')}</button>
+        <button class="btn ghost sm" data-w="0">This week</button>
+        <button class="iconbtn" data-w="1" aria-label="Next week">${ic('right')}</button></div>
+      <div class="week">${days.map((day) => {
+        const js = jobs.filter((j) => j.day === day.iso).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
+        return `<div class="day ${day.iso === t ? 'today' : ''}"><div class="dh"><b>${day.name}</b><span>${day.d.getDate()}</span></div>
+          <div class="jobs">${js.map((j) => `<div class="job ${j.done ? 'done' : ''} a-${esc(j.assignee || '')}">
+            <div class="jtop">${chk(j)}<div class="jt">${esc(j.title)}</div></div>
+            <div class="jm">${j.time ? `<span>${niceTime(j.time)}</span>` : ''}${j.customer ? `<span>${esc(j.customer)}</span>` : ''}${j.assignee ? `<span>${person(j.assignee)}</span>` : ''}</div>
+            ${delBtn(j.id)}</div>`).join('')}</div>
+          <button class="add-day" data-addday="${day.iso}">${ic('plus')}Add</button></div>`;
+      }).join('')}</div>
+      ${unsched.length ? `<section class="card" style="margin-top:18px"><div class="card-h"><h2>Not scheduled yet</h2></div><div class="card-b">${rows(unsched)}</div></section>` : ''}`;
+  },
+  task() {
+    const items = of('task').sort(byDone);
+    const col = (p) => {
+      const its = items.filter((i) => (p ? i.assignee === p : !PEOPLE.includes(i.assignee)));
+      if (!p && !its.length) return '';
+      return `<section class="card"><div class="card-h"><h2>${p ? `${p === 'D' ? 'D' : esc(p)}` : 'Anyone'}</h2><span class="sub">${its.filter((i) => !i.done).length} open</span></div>
+        <div class="card-b">${rows(its, (i) => i.day ? `<span class="${!i.done && overdue(i.day) ? 'badge due' : 'm'}">${!i.done && overdue(i.day) ? 'Overdue · ' : ic('cal')}${nice(i.day)}</span>` : '', empty('tasks', 'No tasks.'))}</div></section>`;
+    };
+    return `<div class="grid g2">${col('D')}${col('Nathan')}</div>${col(null) ? `<div style="margin-top:18px">${col(null)}</div>` : ''}`;
+  },
+  quote() {
+    const f = state.quoteFilter || 'open';
+    const all = of('quote');
+    const items = all.filter((q) => f === 'all' ? true : f === 'open' ? !q.done && q.status !== 'won' && q.status !== 'lost' : q.status === f || (f === 'won' && q.done && q.status !== 'lost'))
+      .sort((a, b) => String(a.follow_up || '9').localeCompare(String(b.follow_up || '9')));
+    const sum = (arr) => money(arr.reduce((s, q) => s + (Number(q.amount) || 0), 0));
+    const won = all.filter((q) => q.status === 'won');
+    return `
+      <div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="card stat"><div class="ic a">${ic('dollar')}</div><div><div class="lbl">Open</div><div class="val">${sum(all.filter((q) => !q.done && q.status !== 'won' && q.status !== 'lost'))}</div></div></div>
+        <div class="card stat"><div class="ic g">${ic('check')}</div><div><div class="lbl">Won</div><div class="val">${sum(won)}</div></div></div>
+        <div class="card stat"><div class="ic r">${ic('bell')}</div><div><div class="lbl">Follow-ups due</div><div class="val">${all.filter((q) => !q.done && q.follow_up && q.follow_up <= todayIso() && q.status !== 'lost').length}</div></div></div>
+      </div>
+      <section class="card"><div class="card-h"><div class="seg">${['open', 'won', 'lost', 'all'].map((k) => `<button data-qf="${k}" class="${f === k ? 'on' : ''}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div><span class="sub">${items.length} quote${items.length === 1 ? '' : 's'}</span></div>
+        ${items.length ? `<table class="tbl"><thead><tr><th>Customer</th><th>Work</th><th style="text-align:right">Amount</th><th>Status</th><th>Follow-up</th><th></th></tr></thead><tbody>
+          ${items.map((q) => `<tr class="${q.done ? 'done' : ''}">
+            <td><b>${esc(q.customer || '—')}</b></td>
+            <td>${esc(q.title)}${q.details ? `<div class="hint">${esc(q.details)}</div>` : ''}</td>
+            <td class="num c-amt">${q.amount != null ? money(q.amount) : '—'}</td>
+            <td><select class="st" data-status="${q.id}">${QUOTE_STATUS.map((s) => `<option ${q.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+            <td>${q.follow_up ? `<span class="${!q.done && q.follow_up <= todayIso() && q.status !== 'lost' && q.status !== 'won' ? 'badge due' : 'hint'}">${nice(q.follow_up)}</span>` : '<span class="hint">—</span>'}</td>
+            <td class="c-del" style="text-align:right">${delBtn(q.id)}</td></tr>`).join('')}
+        </tbody></table>` : `<div class="card-b">${empty('dollar', 'No quotes here yet.')}</div>`}
+      </section>`;
+  },
+  check() {
+    const groups = {};
+    of('check').forEach((i) => { const k = i.customer || 'General'; (groups[k] = groups[k] || []).push(i); });
+    const names = Object.keys(groups);
+    if (!names.length) return `<section class="card"><div class="card-b">${empty('list', 'No checklists yet. Add a step to start one.')}</div></section>`;
+    return `<div class="grid g2">${names.map((g) => {
+      const its = groups[g].sort((a, b) => a.id - b.id), n = its.filter((i) => i.done).length;
+      return `<section class="card"><div class="card-h"><div style="flex:1"><h2>${esc(g)}</h2><div class="progress"><i style="width:${Math.round(100 * n / its.length)}%"></i></div></div><span class="sub">${n}/${its.length}</span></div>
+        <div class="card-b">${rows(its)}</div></section>`;
+    }).join('')}</div>`;
+  },
+  note() {
+    const items = of('note').sort(byDone);
+    return `<div class="grid g2">${NOTE_SECTIONS.map((s) => {
+      const its = items.filter((i) => (i.status || 'Marketing') === s);
+      return `<section class="card"><div class="card-h"><h2>${s}</h2><span class="sub">${its.filter((i) => !i.done).length} open</span></div>
+        <div class="card-b">${rows(its, null, empty('star', 'Nothing here yet.'))}</div></section>`;
+    }).join('')}</div>`;
+  },
+  change() {
+    const items = of('change').sort(byDone);
+    return `<section class="card"><div class="card-h"><h2>All items</h2><span class="sub">Tick when resolved</span></div>
+      <div class="card-b">${rows(items, (i) => `<span class="badge">${esc(i.status || 'Schedule change')}</span>${person(i.assignee)}<span class="m">Added ${new Date(i.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>`, empty('swap', 'No changes or open questions.'))}</div></section>`;
+  },
+};
+
+/* ---------------- render ---------------- */
+function counts(k) {
+  if (k === 'home') return 0;
+  if (k === 'job') { const w = weekDays(0); return of('job').filter((j) => !j.done && j.day >= w[0].iso && j.day <= w[6].iso).length; }
+  if (k === 'quote') return of('quote').filter((q) => !q.done && q.status !== 'won' && q.status !== 'lost').length;
+  return of(k).filter((i) => !i.done).length;
+}
+function render() {
+  const page = PAGES.find((p) => p.key === state.page) || PAGES[0];
+  $('nav').innerHTML = PAGES.map((p, n) => `${n === 1 ? '<div class="sep"></div>' : ''}<button class="${p.key === page.key ? 'active' : ''}" data-go="${p.key}">${ic(p.icon)}<span>${p.label}</span>${counts(p.key) ? `<span class="cnt">${counts(p.key)}</span>` : ''}</button>`).join('');
+  $('mnav').innerHTML = PAGES.map((p) => `<button class="${p.key === page.key ? 'active' : ''}" data-go="${p.key}">${p.label}</button>`).join('');
+  $('pageTitle').textContent = page.key === 'home' ? greeting() : page.label;
+  $('pageSub').textContent = page.sub;
+  $('pageAction').innerHTML = page.add ? `<button class="btn primary" data-add="${page.key}">${ic('plus')}${page.add}</button>`
+    : `<button class="btn primary" data-add="job">${ic('plus')}New job</button>`;
+  $('view').innerHTML = VIEWS[page.key]();
+  bind();
+}
+function greeting() { const h = new Date().getHours(); return (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + (state.me.name ? ', ' + state.me.name : ''); }
+
+let armed = null;
+function bind() {
+  document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => { state.page = b.dataset.go; try { localStorage.setItem('hub_page', state.page); } catch (e) {} render(); window.scrollTo(0, 0); });
+  document.querySelectorAll('[data-add]').forEach((b) => b.onclick = () => openAdd(b.dataset.add));
+  document.querySelectorAll('[data-addday]').forEach((b) => b.onclick = () => openAdd('job', { day: b.dataset.addday }));
+  document.querySelectorAll('[data-done]').forEach((c) => c.onchange = () => patch(Number(c.dataset.done), { done: c.checked }));
+  document.querySelectorAll('[data-status]').forEach((s) => s.onchange = () => patch(Number(s.dataset.status), { status: s.value, ...(s.value === 'won' || s.value === 'lost' ? { done: true } : { done: false }) }));
+  document.querySelectorAll('[data-w]').forEach((b) => b.onclick = () => { const w = Number(b.dataset.w); state.weekOffset = w === 0 ? 0 : state.weekOffset + w; render(); });
+  document.querySelectorAll('[data-qf]').forEach((b) => b.onclick = () => { state.quoteFilter = b.dataset.qf; render(); });
+  document.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => {
+    const id = Number(b.dataset.del);
+    if (armed === id) { armed = null; remove(id); return; }
+    armed = id; b.classList.add('armed'); b.textContent = 'Delete?';
+    setTimeout(() => { if (armed === id) { armed = null; b.classList.remove('armed'); b.innerHTML = ic('trash'); } }, 3000);
+  });
+}
+
+async function start() {
+  try {
+    const me = await api('/auth/me');
+    const users = me.role === 'admin' ? await api('/users').catch(() => []) : [];
+    const u = users.find && users.find((x) => x.email === me.email);
+    state.me = { ...me, name: (u && u.name) || ((s) => s.charAt(0).toUpperCase() + s.slice(1))((me.email || '').split('@')[0]) };
+    $('meName').textContent = state.me.name || me.email || '';
+    $('meRole').textContent = me.role || '';
+    $('avatar').textContent = (state.me.name || 'W').trim()[0].toUpperCase();
+    $('addLogin').style.display = me.role === 'admin' ? '' : 'none';
+    await load();
+  } catch (e) { if (e.message !== 'Not signed in') toast(e.message, true); }
+}
+if (!token) showLogin(); else start();
+</script>
+</body>
+</html>
