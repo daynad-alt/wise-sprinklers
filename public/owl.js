@@ -80,6 +80,7 @@
       .then(function (d) {
         var reply = d.reply || "Sorry, I'm having trouble right now. Please call 281-910-4283.";
         wait.textContent = reply; if (d.quote_saved) wait.classList.add('ok');
+        if (d.demo) panel.querySelector('.wo-foot').textContent = 'Demo mode: sample answers, nothing is sent.';
         history.push({ role: 'assistant', content: reply }); save();
       })
       .catch(function () { wait.textContent = "I can't connect right now. Please call 281-910-4283."; })

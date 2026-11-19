@@ -52,6 +52,27 @@ const TOOLS = [{
   },
 }];
 
+
+// Demo mode: on preview builds with no API key, answer from a short script
+// so the owl can be shown off. Never saves anything. Production never uses it.
+const DEMO_ON = !process.env.ANTHROPIC_API_KEY && process.env.CONTEXT !== 'production';
+const DEMO = [
+  [/(estimate|quote|price|cost|how much|book|appointment|visit|schedule)/i, "Happy to set that up! Pricing depends on your property, so every job starts with a free on-site estimate. What's your name, and the best phone or email to reach you?"],
+  [/(\d{3}\D?\d{3}\D?\d{4}|@)/, "Thanks! In the live version I'd send this straight to the Wise Sprinklers team, and they'd reach out the same day. (This is a demo, so nothing was sent.)"],
+  [/(drain|water pool|standing water|flood|soggy|puddle)/i, "Hoo! Standing water usually means you need a French drain, channel drain or catch basin. Our engineered drainage fixes it for good. Want a free estimate?"],
+  [/(repair|broken|leak|not working|head|valve|controller|backflow)/i, "We fix broken heads, leaking valves, backflow and controller problems, and we get it right the first time. Want me to set up a visit?"],
+  [/(install|new system|upgrade|sprinkler|irrigation)/i, "We design custom sprinkler systems for full coverage and water savings, led by a Texas Licensed Irrigator. Want a free estimate?"],
+  [/(christmas|holiday|xmas)/i, "Our Christmas lighting uses custom-fit C9 LEDs, and install, maintenance, takedown and storage are all included. Want to get on the schedule?"],
+  [/(light|lighting|landscape light)/i, "Our LED landscape lighting adds curb appeal and safety after dark. We handle the design and the install. Want a free estimate?"],
+  [/(wise care|maintenance|plan|tune)/i, "Wise Care plans include seasonal tune-ups and priority scheduling for your sprinklers, your lighting, or both. Bundling both saves more."],
+  [/(area|serve|city|county|where|league city|pearland|friendswood|houston|galveston)/i, "We serve Brazoria, Galveston and Harris Counties from Friendswood, TX. Want a free estimate?"],
+  [/(hi|hello|hey)\b/i, "Hoo! Hi there. I can answer questions about sprinklers, drainage, landscape lighting and Christmas lights, or set up a free estimate."],
+];
+function demoReply(text) {
+  for (const [re, reply] of DEMO) if (re.test(text)) return reply;
+  return "Good question! Our team can answer that best. Call 281-910-4283, or I can set up a free estimate for you.";
+}
+
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const FALLBACK = "Sorry, I'm having trouble right now. Please call us at 281-910-4283 or use the estimate form on this page.";
 
@@ -71,10 +92,13 @@ async function saveQuote(input, origin) {
 
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
-  if (!process.env.ANTHROPIC_API_KEY) return json({ reply: FALLBACK, error: 'not configured' }, 503);
-
   let body;
   try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
+  if (DEMO_ON) {
+    const last = [...(body.messages || [])].reverse().find((m) => m && m.role === 'user');
+    return json({ reply: demoReply(String(last?.content || '').slice(0, MAX_CHARS)), demo: true });
+  }
+  if (!process.env.ANTHROPIC_API_KEY) return json({ reply: FALLBACK, error: 'not configured' }, 503);
   const history = Array.isArray(body.messages) ? body.messages : [];
   if (!history.length || history.length > MAX_TURNS) return json({ reply: "We've covered a lot! For anything else, please call 281-910-4283." });
 
