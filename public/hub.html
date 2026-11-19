@@ -30,8 +30,8 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
 /* ---------- shell ---------- */
 .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
 .side{background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:20px 14px}
-.side .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
-.side .brand img{height:38px;width:auto}
+.side .brand{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:4px 8px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
+.side .brand img{width:100%;max-width:200px;height:auto;max-height:100px;object-fit:contain;object-position:left center}
 .side .brand .bt{font-family:"Bricolage Grotesque";font-weight:700;font-size:15px;line-height:1.15}
 .side .brand .bt small{display:block;font-family:"DM Sans";font-weight:500;font-size:11.5px;color:var(--side-muted);letter-spacing:.04em;text-transform:uppercase}
 .nav{display:flex;flex-direction:column;gap:2px}
@@ -174,13 +174,14 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
 /* ---------- login ---------- */
 #login{position:fixed;inset:0;z-index:40;display:none;grid-template-columns:1fr 1fr;background:var(--surface)}
 #login .art{background:linear-gradient(160deg,#0d2a1b 0%,#123f29 55%,#14476e 100%);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between}
-#login .art img{height:64px;width:auto;align-self:flex-start}
+#login .art img{height:120px;width:auto;max-width:100%;object-fit:contain;align-self:flex-start}
 #login .art h2{font-size:36px;font-weight:800;line-height:1.08;max-width:12ch}
 #login .art p{color:#bcd3c6;max-width:38ch;margin-top:12px}
 #login .art ul{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:22px;color:#dfe9e3;font-size:14px}
 #login .art li{display:flex;gap:10px;align-items:center}
 #login .art li svg.i{color:#5fd38d}
 #login .pane{display:flex;align-items:center;justify-content:center;padding:32px}
+#login .plogo{display:none}
 #login form{width:min(380px,100%);display:flex;flex-direction:column;gap:14px}
 #login form h1{font-size:26px;font-weight:700}
 #login form .lead{color:var(--muted);font-size:14px;margin-top:-8px}
@@ -200,10 +201,10 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
   .app{grid-template-columns:1fr}
   .side{display:none}
   .mobilebar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--side);color:#fff;position:sticky;top:0;z-index:10}
-  .mobilebar img{height:30px}
+  .mobilebar img{height:48px;width:auto;max-width:45vw;object-fit:contain}
   .mobilebar b{font-family:"Bricolage Grotesque";font-size:15px;flex:1}
   .mobilebar button{background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
-  .mnav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);scrollbar-width:none;position:sticky;top:50px;z-index:9}
+  .mnav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);scrollbar-width:none;position:sticky;top:68px;z-index:9}
   .mnav button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:6px 12px;font-weight:600;font-size:13px;color:var(--ink-2);cursor:pointer}
   .mnav button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   .top{padding:16px}
@@ -222,6 +223,7 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
   .frow{grid-template-columns:1fr}
   #login{grid-template-columns:1fr}
   #login .art{display:none}
+  #login .plogo{display:block;height:96px;width:auto;max-width:100%;object-fit:contain;margin:0 0 24px;background:var(--side);padding:12px 16px;border-radius:14px}
 }
 @media(min-width:861px){.mnav{display:none}}
 </style>
@@ -244,6 +246,7 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
     <small style="color:#8fa89a">Private. Staff only.</small>
   </div>
   <div class="pane">
+    <div style="width:min(380px,100%)"><img class="plogo" src="/api/media/logo.png" alt="Wise Sprinklers &amp; Lighting" onerror="this.remove()" />
     <form id="loginForm">
       <h1>Sign in</h1>
       <p class="lead">Use your Wise dashboard account.</p>
@@ -264,6 +267,7 @@ svg.i{width:18px;height:18px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-
       <p class="err" id="setupErr"></p>
       <p class="hint"><button type="button" class="linkbtn" id="toLogin">Back to sign in</button></p>
     </form>
+    </div>
   </div>
 </div>
 
