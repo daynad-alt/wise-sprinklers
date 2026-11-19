@@ -195,6 +195,13 @@ section{position:relative;padding:0 clamp(18px,4vw,54px)}
 .card.c-c{grid-column:span 4}
 .card.c-d{grid-column:span 4}
 .card.c-e{grid-column:span 4}
+.card.c-f{grid-column:span 4;min-height:340px}
+.gal-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:-16px 0 26px}
+.gal-tabs button{font:600 .78rem "DM Sans",sans-serif;letter-spacing:.06em;color:var(--cream-dim);background:transparent;border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer;transition:all .25s}
+.gal-tabs button:hover{color:var(--cream)}
+.gal-tabs button.on{background:var(--emerald-bright);border-color:var(--emerald-bright);color:var(--forest)}
+.gal-more{display:block;margin:26px auto 0;font:600 .8rem "DM Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--cream);background:transparent;border:1px solid var(--line);border-radius:999px;padding:13px 26px;cursor:pointer}
+.gal-more[hidden]{display:none}
 @media(max-width:820px){.card{grid-column:1/-1!important;min-height:240px!important}}
 
 /* care band */
@@ -369,7 +376,9 @@ footer a:hover{color:var(--emerald-bright)}
     </div>
     <p data-fade>Healthy lawns, dry yards and beautiful nightscapes across the Gulf Coast.</p>
   </div>
+  <div class="gal-tabs" id="galtabs" role="tablist" aria-label="Filter projects"></div>
   <div class="grid" id="galgrid"></div>
+  <button class="gal-more" id="galmore" type="button">See all projects</button>
 </section>
 
 <!-- CARE BAND -->
@@ -537,7 +546,7 @@ const MEDIA={
   "2026/07/FD0994CD-2355-4AA4-86C2-95EC2E8CD2A3-3.png":"gal-holiday.jpg","2025/07/IMG_3706d.png":"gal-repair.jpg",
   "2025/07/IMG_3274-scaled.jpg":"about.jpg","2025/07/IMG_2096.jpeg":"band.jpg"
 };
-const U=(p)=>"/api/media/"+(MEDIA[p]||p);
+const U=(p)=>p.startsWith("/")?p:"/api/media/"+(MEDIA[p]||p);
 /* ---- imagery: real Wise Sprinklers & Lighting project photos ---- */
 const HERO=[
   {id:"2025/07/IMG_3045-scaled.jpeg",label:"Irrigation & Sprinklers"},
@@ -558,7 +567,25 @@ const GAL=[
   {c:"c-b",tag:"Landscape Lighting",t:"Warm architectural nightscape",img:"2026/07/CBC10AB2-C873-4DDA-B35A-C55C82F462AE.png"},
   {c:"c-c",tag:"Drainage",t:"French drains & catch basins",img:"2026/07/C210E694-7DC1-40D9-9774-D85A887017EF.png"},
   {c:"c-d",tag:"Holiday",t:"Festive rooflines",img:"2026/07/FD0994CD-2355-4AA4-86C2-95EC2E8CD2A3-3.png"},
-  {c:"c-e",tag:"Repair",t:"Leaks, valves & backflow",img:"2025/07/IMG_3706d.png"}
+  {c:"c-e",tag:"Repair",t:"Leaks, valves & backflow",img:"2025/07/IMG_3706d.png"},
+  /* Nov 2026 project photos (Keli) — /img/gallery, resized WebP */
+  {tag:"Irrigation",t:"Head-to-head coverage along the drive",img:"/img/gallery/sprinkler-curved-drive.webp"},
+  {tag:"Landscape Lighting",t:"Uplit trees & a lit front walk",img:"/img/gallery/lighting-brick-walkway.webp"},
+  {tag:"Drainage",t:"Finished yard drain, flush with the turf",img:"/img/gallery/drainage-finished-grate.webp"},
+  {tag:"Holiday",t:"Red & white C9 rooflines",img:"/img/gallery/christmas-red-white.webp"},
+  {tag:"Irrigation",t:"Large-property rotor zones",img:"/img/gallery/sprinkler-open-field.webp"},
+  {tag:"Landscape Lighting",t:"Palm uplighting",img:"/img/gallery/lighting-palms.webp"},
+  {tag:"Drainage",t:"Catch basin & solid pipe tie-in",img:"/img/gallery/drainage-catch-basin.webp"},
+  {tag:"Holiday",t:"Full display, red & green wash",img:"/img/gallery/christmas-joy-display.webp"},
+  {tag:"Irrigation",t:"Commercial strip pop-ups",img:"/img/gallery/sprinkler-commercial-strip.webp"},
+  {tag:"Landscape Lighting",t:"Live oaks after dark",img:"/img/gallery/lighting-oaks.webp"},
+  {tag:"Drainage",t:"French drain, perforated line",img:"/img/gallery/drainage-french-drain.webp"},
+  {tag:"Holiday",t:"Multicolor rooflines & windows",img:"/img/gallery/christmas-multicolor.webp"},
+  {tag:"Irrigation",t:"Pop-up spray head",img:"/img/gallery/sprinkler-closeup.webp"},
+  {tag:"Landscape Lighting",t:"Brick facade wash",img:"/img/gallery/lighting-brick-uplights.webp"},
+  {tag:"Drainage",t:"Solid drain line in the trench",img:"/img/gallery/drainage-solid-pipe.webp"},
+  {tag:"Holiday",t:"Cool white classic",img:"/img/gallery/christmas-cool-white.webp"},
+  {tag:"Repair",t:"Insulated backflow preventer",img:"/img/gallery/repair-backflow.webp"}
 ];
 /* build hero slides + dots */
 const slides=document.getElementById('slides'),dots=document.getElementById('dots');
@@ -578,8 +605,20 @@ SERVICES.forEach(s=>{const el=document.createElement('div');el.className='scard'
   <span class="idx">${s.n}</span><h3>${s.t}</h3><p>${s.d}</p>`;sg.appendChild(el);});
 /* build gallery */
 const gg=document.getElementById('galgrid');
-GAL.forEach(c=>{const el=document.createElement('div');el.className='card '+c.c;el.setAttribute('data-cursor','view');
-  el.innerHTML=`<div class="bg"><img src="${U(c.img,900)}" alt="${c.t}" loading="lazy"></div><span class="tag">${c.tag}</span><h4>${c.t}</h4>`;gg.appendChild(el);});
+const GTABS=[["All","All"],["Irrigation","Irrigation"],["Drainage","Drainage"],["Landscape Lighting","Landscape Lighting"],["Holiday","Christmas"],["Repair","Repair"]];
+const gt=document.getElementById('galtabs'),gm=document.getElementById('galmore');let gFilter="All",gAll=false;
+function cardEl(c,cls){const el=document.createElement('div');el.className='card '+cls;el.setAttribute('data-cursor','view');
+  el.innerHTML=`<div class="bg"><img src="${U(c.img,900)}" alt="${c.t}" loading="lazy"></div><span class="tag">${c.tag}</span><h4>${c.t}</h4>`;return el;}
+function renderGal(){gg.innerHTML='';
+  const list=gFilter==="All"?GAL:GAL.filter(c=>c.tag===gFilter);
+  const lim=gFilter==="All"&&!gAll?8:list.length;
+  list.slice(0,lim).forEach(c=>gg.appendChild(cardEl(c,gFilter==="All"&&c.c?c.c:'c-f')));
+  gm.hidden=lim>=list.length;
+  gt.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.f===gFilter));
+  if(typeof bindCursor==='function')bindCursor();}
+GTABS.forEach(([f,l])=>{const b=document.createElement('button');b.type='button';b.dataset.f=f;b.textContent=l;b.onclick=()=>{gFilter=f;gAll=false;renderGal();};gt.appendChild(b);});
+gm.onclick=()=>{gAll=true;renderGal();};
+renderGal();
 /* marquee */
 const words=["Irrigation","Drainage","Landscape Lighting","Christmas Lighting","Repairs","Wise Care","Free Estimates"];
 const star=`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.2-6.3-4.5-6.3 4.5L7.9 13.6 2 9.2h7.6z"/></svg>`;
