@@ -15,7 +15,7 @@ body{background:var(--forest);color:var(--cream);font-family:system-ui,-apple-sy
 a{color:var(--green);text-decoration:none}
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:#080a09;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 header .brand{display:flex;align-items:center;gap:12px}
-header img{height:44px}
+header img{height:72px;width:auto}
 header .brand b{font-weight:700}
 header .badge{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);border:1px solid var(--line);padding:5px 10px;border-radius:20px}
 header .right{display:flex;gap:16px;align-items:center;font-size:13px}
@@ -158,6 +158,7 @@ function showLogin(message) {
   el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0a1c12;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif';
   el.innerHTML = `
     <form id="loginForm" style="background:#0e2618;padding:34px;border-radius:14px;width:min(360px,90vw);border:1px solid rgba(245,241,231,.16)">
+      <img src="/api/media/logo.png" alt="Wise Sprinklers &amp; Lighting" onerror="this.remove()" style="display:block;height:110px;width:auto;max-width:100%;margin:0 auto 18px" />
       <h2 style="color:#f5f1e7;margin:0 0 6px;font-size:1.15rem">Wise Sprinklers</h2>
       <p style="color:#8ea79a;margin:0 0 20px;font-size:.85rem">Sign in to the dashboard</p>
       <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" required
