@@ -100,13 +100,12 @@ ul.items li.done .t{text-decoration:line-through;color:var(--faint)}
 
   <form id="setupForm" style="display:none">
     <h2 style="font-size:1.15rem">Create your account</h2>
-    <p style="color:var(--dim);font-size:13px;margin:4px 0 14px">You'll need the site's <b>setup key</b>. Find it in Netlify: open
-      <a href="https://app.netlify.com/projects/wisesprinklers/configuration/env" target="_blank" rel="noopener">Environment variables</a>,
-      click <b>ADMIN_TOKEN</b>, and copy its value.</p>
+    <p style="color:var(--dim);font-size:13px;margin:4px 0 14px">You'll need the <b>setup key</b> Claude sent you. It's also saved in Netlify as
+      <a href="https://app.netlify.com/projects/wisesprinklers/configuration/env" target="_blank" rel="noopener">HUB_SETUP_KEY</a>.</p>
     <input id="setupName" placeholder="Your name" autocomplete="name" />
     <input id="setupEmail" type="email" placeholder="Email" autocomplete="username" required />
     <input id="setupPass" type="password" placeholder="Choose a password (10+ characters)" minlength="10" autocomplete="new-password" required />
-    <input id="setupKey" type="password" placeholder="Setup key (ADMIN_TOKEN)" autocomplete="off" required />
+    <input id="setupKey" type="password" placeholder="Setup key" autocomplete="off" required />
     <button class="btn" type="submit">Create account and sign in</button>
     <p id="setupErr" style="color:var(--red);font-size:13px;min-height:1em;margin-top:10px"></p>
     <p style="font-size:13px;color:var(--dim)"><button type="button" class="link-btn" id="toLogin">Back to sign in</button></p>
@@ -202,11 +201,11 @@ $('setupForm').addEventListener('submit', async (e) => {
   err.textContent = 'Creating your account…';
   try {
     const r = await fetch(API + '/users', { method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': $('setupKey').value.trim() },
+      headers: { 'Content-Type': 'application/json', 'X-Setup-Key': $('setupKey').value.trim() },
       body: JSON.stringify({ name: $('setupName').value.trim() || null, email, password, role: 'admin' }) });
     const d = await r.json().catch(() => ({}));
-    if (r.status === 401) { err.textContent = "That setup key didn't match. Copy ADMIN_TOKEN from Netlify again."; return; }
-    if (r.status === 503) { err.textContent = 'The site has no setup key yet. Ask Claude to set ADMIN_TOKEN in Netlify.'; return; }
+    if (r.status === 401) { err.textContent = "That setup key didn't match. Check it and try again."; return; }
+    if (r.status === 503) { err.textContent = 'The site has no setup key yet. Ask Claude to set it up.'; return; }
     if (!r.ok && r.status !== 409) { err.textContent = d.error || 'Could not create the account'; return; }
     if (r.status === 409) { err.textContent = 'That email already has an account. Signing you in…'; }
     const l = await fetch(API + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });

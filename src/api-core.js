@@ -500,6 +500,11 @@ function createApp(db) {
   app.use((req, res, next) => {
     const path = req.url.split('?')[0];
     if (PUBLIC.some(([m, re]) => m === req.method && re.test(path))) return next();
+    // HUB_SETUP_KEY lets the owner create a login from the Hub sign-in page
+    // without the (hidden) ADMIN_TOKEN. It opens account creation and nothing else.
+    const setupKey = process.env.HUB_SETUP_KEY;
+    if (req.method === 'POST' && path === '/users' && setupKey && req.get('X-Setup-Key')
+        && timingSafeEqual(req.get('X-Setup-Key'), setupKey)) return next();
     if (!process.env.ADMIN_TOKEN) return res.status(503).json({ error: 'Admin API is not configured (ADMIN_TOKEN unset)' });
     if (!isAuthed(req)) return res.status(401).json({ error: 'Unauthorized' });
     // Staff role sees the business, but may not alter the public site or delete records.
