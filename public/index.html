@@ -64,9 +64,9 @@ h1,h2,h3,h4,.dsp{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;li
 nav{position:fixed;top:0;left:0;width:100%;z-index:80;display:flex;justify-content:space-between;align-items:center;padding:6px clamp(18px,4vw,54px);background:var(--header);border-bottom:1px solid rgba(255,255,255,.08);transition:padding .4s,box-shadow .4s}
 nav.solid{box-shadow:0 10px 30px rgba(0,0,0,.4)}
 nav .brand{display:flex;align-items:center}
-nav .brand .logomark{height:96px;width:auto;display:block}
-nav.solid .brand .logomark{height:80px;transition:height .4s}
-@media(max-width:600px){nav .brand .logomark{height:66px}}
+nav .brand .logomark{height:128px;width:auto;display:block}
+nav.solid .brand .logomark{height:100px;transition:height .4s}
+@media(max-width:600px){nav .brand .logomark{height:84px;max-width:calc(100vw - 210px);object-fit:contain;object-position:left center}}
 nav .navlinks{display:flex;gap:30px;font-size:.8rem;font-weight:500}
 nav .navlinks a{position:relative;opacity:.9}
 nav .navlinks a::after{content:"";position:absolute;left:0;bottom:-5px;width:0;height:2px;background:var(--emerald-bright);transition:width .4s var(--ease)}
@@ -80,7 +80,7 @@ section{position:relative;padding:0 clamp(18px,4vw,54px)}
 .eyebrow::before{content:"";width:30px;height:2px;background:var(--emerald-bright)}
 
 /* ---------- HERO SLIDER ---------- */
-.hero{min-height:100svh;display:flex;align-items:center;padding-top:120px;padding-bottom:60px;overflow:hidden}
+.hero{min-height:100svh;display:flex;align-items:center;padding-top:160px;padding-bottom:60px;overflow:hidden}
 .slides{position:absolute;inset:0;z-index:-2}
 .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.3s var(--ease)}
 .slide img{width:100%;height:100%;object-fit:cover;transform:scale(1.08);transition:transform 7s ease-out}
